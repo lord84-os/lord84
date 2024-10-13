@@ -1,0 +1,2 @@
+-I./src/include
+-Wno-incompatible-library-redeclaration
