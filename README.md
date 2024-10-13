@@ -5,7 +5,7 @@ lord84 is an operating system for the x86_64 architecture. It is written in C. L
 
 ## How to build
 
-First run `make dependencies` to build Limine and Flanterm
+First run `make dependencies` to clone and build Limine and Flanterm
 
 Then run `make all` - make sure to adjust the `CC`, `AS` and `LD` flags to match your cross-compiling toolchain
 
