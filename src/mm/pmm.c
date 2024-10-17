@@ -10,6 +10,10 @@ static volatile struct limine_memmap_request memmap_request = {
 
 extern uint64_t hhdmoffset;
 
+uint64_t pmm_free_page_count = 0;
+
+struct limine_memmap_response *memmap_response;
+
 /* Freelist implementation */
 uint64_t *free_list = NULL;
 
@@ -21,13 +25,21 @@ void pmm_free(uint64_t *addr){
     /* Make the free_list point to the newly freed page */
     free_list = (uint64_t*)((uint64_t)(addr) + hhdmoffset);
 
+    pmm_free_page_count++;
+
     return;
 }
 
 uint64_t *pmm_alloc(){
+
+    if(pmm_free_page_count <= 0){
+        return NULL;
+    }
+
     /* Fetch the address of the free page in free_list and make it point to the next free page */
-    uint64_t *addr = (uint64_t*)(free_list - hhdmoffset);
+    uint64_t *addr = (uint64_t*)((uint64_t)free_list - hhdmoffset);
     free_list = (uint64_t*)(*free_list);
+    pmm_free_page_count--;
 
     return addr;
 }
@@ -39,17 +51,18 @@ void pmm_init(){
         kkill();
     }
 
-    struct limine_memmap_entry **entries = memmap_request.response->entries;
+    memmap_response = memmap_request.response;
+
+    struct limine_memmap_entry **entries = memmap_response->entries;
 
     bool first_entry = true;
 
     uint64_t j;
     uint64_t i;
 
-    for(i = 0; i < memmap_request.response->entry_count; i++){
+    for(i = 0; i < memmap_response->entry_count; i++){
         switch (entries[i]->type) {
             case LIMINE_MEMMAP_USABLE:
-
                 /* First set the first entry if it isn't set already */
                 if(first_entry == true){
                     first_entry = false;

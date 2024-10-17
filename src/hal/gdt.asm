@@ -8,13 +8,11 @@ global s_load_gdt
 
 s_load_gdt:
 
-    cli
-
     lgdt [gdtr]
 
     ; move kernel code offset into cs register
-    mov ax, 0x08
-    mov cs, ax
+    ;mov ax, 0x08
+    ;mov cs, ax
 
     ; move kernel data offset into data registers
     mov ax, 0x10
@@ -25,7 +23,5 @@ s_load_gdt:
     xor ax, ax
     mov fs, ax
     mov gs, ax
-
-    sti
 
     ret

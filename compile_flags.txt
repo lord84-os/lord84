@@ -1,2 +1,3 @@
 -I./src/include
+-Wall
 -Wno-incompatible-library-redeclaration

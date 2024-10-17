@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stdbool.h>
 typedef struct rsdp_t {
     uint64_t signature;
     uint8_t checksum;
@@ -46,6 +47,49 @@ typedef struct madt_t {
     ics_t ics[];
 } __attribute((packed)) madt_t;
 
+typedef struct lapic_ao_t {
+    ics_t ics;
+    uint16_t reserved;
+    uint64_t lapic_address;
+}__attribute((packed)) lapic_ao_t;
+
+typedef struct gas_t {
+    uint8_t address_space_id;
+    uint8_t reg_bit_width;
+    uint8_t reg_bit_offset;
+    uint8_t reserved;
+    uint64_t address;
+}__attribute((packed)) gas_t;
+
+typedef struct hpet_t {
+    desc_header_t header;
+    uint32_t event_timer_blkid;
+    gas_t base_address;
+    uint8_t hpet_number;
+    uint16_t minimum_clk_tick;
+    uint8_t oem_attribute;
+}__attribute((packed)) hpet_t;
+
+typedef struct ioapic_t{
+    ics_t ics;
+    uint8_t ioapic_id;
+    uint8_t reserved;
+    uint32_t ioapic_address;
+    uint32_t gsi_base;
+}__attribute((packed)) ioapic_t;
+
+typedef struct iso_t{
+    ics_t ics;
+    uint8_t bus;
+    uint8_t source;
+    uint32_t gsi;
+    uint16_t flags;
+}__attribute((packed)) iso_t;
+
+
+
 void acpi_init(void);
+uint64_t *find_acpi_table(char *signature);
+uint64_t *find_ics(uint64_t type);
 
 

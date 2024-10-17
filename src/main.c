@@ -1,12 +1,16 @@
 #include <stdint.h>
 #include <stddef.h>
+#include <lord84.h>
 #include "../limine/limine.h"
 #include "include/stdio.h"
 #include "flanterm/flanterm.h"
 #include "flanterm/backends/fb.h"
 #include "hal/gdt.h"
 #include "hal/idt.h"
+#include "hal/apic.h"
+#include "hal/timer.h"
 #include "mm/pmm.h"
+#include "mm/vmm.h"
 #include "sys/acpi.h"
 
 static volatile struct limine_framebuffer_request framebuffer_request = {
@@ -64,6 +68,11 @@ void _start(void){
     /* initialize flanterm */
 
     kprintf("Welcome to lord84{n}");
+
+    extern link_symbol_ptr text_start_addr, text_end_addr;
+
+    kprintf("text_start: 0x{x}\ntext_end: 0x{x}\n", text_start_addr, (uint64_t)text_end_addr);
+
     /* load the GDT*/
     klog(LOG_INFO, "gdt", "Setting up the GDT");
     set_gdt();
@@ -78,9 +87,17 @@ void _start(void){
     pmm_init();
     klog(LOG_SUCCESS, "pmm", "Done!");
 
+    klog(LOG_INFO, "vmm", "Setting up the page tables");
+    vmm_init();
+    klog(LOG_SUCCESS, "vmm", "Done!");
+
     klog(LOG_INFO, "acpi", "Reading ACPI tables");
     acpi_init();
     klog(LOG_SUCCESS, "acpi", "Done!");
+
+    klog(LOG_INFO, "apic", "Initalizing APIC");
+    apic_init();
+    klog(LOG_SUCCESS, "apic", "Done!");
 
     death:
     for(;;);

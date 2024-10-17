@@ -18,7 +18,7 @@ CFLAGS += -Wall \
     -mno-sse2 \
     -mno-red-zone \
 	-I src/include \
-	-O2 \
+	-O0 \
 	-g
 
 CDEBUG = -g
@@ -64,7 +64,12 @@ all:
 	$(CC) -c src/hal/idt.c -o $(BUILD_DIR)/idt.o $(CFLAGS)
 	$(AS) 	 src/hal/idt.asm -o $(BUILD_DIR)/idt_asm.o $(NASMFLAGS)
 
+	$(CC) -c src/hal/apic.c -o $(BUILD_DIR)/apic.o $(CFLAGS)
+	$(CC) -c src/hal/ioapic.c -o $(BUILD_DIR)/ioapic.o $(CFLAGS)
+	$(CC) -c src/hal/timer.c -o $(BUILD_DIR)/timer.o $(CFLAGS)
+
 	$(CC) -c src/mm/pmm.c -o $(BUILD_DIR)/pmm.o $(CFLAGS)
+	$(CC) -c src/mm/vmm.c -o $(BUILD_DIR)/vmm.o $(CFLAGS)
 
 	$(CC) -c src/sys/acpi.c -o $(BUILD_DIR)/acpi.o $(CFLAGS)
 
