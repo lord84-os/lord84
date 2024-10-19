@@ -11,16 +11,18 @@ static volatile struct limine_memmap_request memmap_request = {
 extern uint64_t hhdmoffset;
 
 uint64_t pmm_free_page_count = 0;
+uint64_t pmm_page_count = 0;
 
 struct limine_memmap_response *memmap_response;
 
 /* Freelist implementation */
 uint64_t *free_list = NULL;
 
-void pmm_free(uint64_t *addr){
+void pmm_free(uint64_t *addr){\
+    uint64_t *virt_addr = (uint64_t*)((uint64_t)addr+hhdmoffset);
     /* Make the given page point to the previous free page */
-
-    *(uint64_t*)((uint64_t)(addr)+hhdmoffset) = (uint64_t)free_list;
+    
+    *virt_addr = (uint64_t)free_list;
 
     /* Make the free_list point to the newly freed page */
     free_list = (uint64_t*)((uint64_t)(addr) + hhdmoffset);
@@ -74,7 +76,10 @@ void pmm_init(){
 
                 for(; j < (entries[i]->length / BLOCK_SIZE); j++){
                     pmm_free((uint64_t*)(entries[i]->base + j*BLOCK_SIZE));
+                    pmm_page_count++;
                 }
         }
     }
+
+    kprintf("pmm: got a total of {d}MB of memory\n", (pmm_page_count * 4096) / 1048576);
 }

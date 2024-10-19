@@ -91,13 +91,13 @@ void _start(void){
     vmm_init();
     klog(LOG_SUCCESS, "vmm", "Done!");
 
-    klog(LOG_INFO, "acpi", "Reading ACPI tables");
+/*     klog(LOG_INFO, "acpi", "Reading ACPI tables");
     acpi_init();
     klog(LOG_SUCCESS, "acpi", "Done!");
 
     klog(LOG_INFO, "apic", "Initalizing APIC");
     apic_init();
-    klog(LOG_SUCCESS, "apic", "Done!");
+    klog(LOG_SUCCESS, "apic", "Done!"); */
 
     death:
     for(;;);

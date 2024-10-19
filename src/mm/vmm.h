@@ -6,6 +6,7 @@
 #define PTE_BIT_US      0x4                 // User and Supervisor bit
 #define PTE_BIT_NX      0x4000000000000000  // Non-executable bit
 
+
 void tlb_flush(void);
 void vmm_map_page(uint64_t *page_map, uint64_t *virt_address, uint64_t* phys_address, uint64_t flags);
 void vmm_init();

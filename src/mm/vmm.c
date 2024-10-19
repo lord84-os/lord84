@@ -138,7 +138,7 @@ void vmm_map_page(uint64_t *page_map, uint64_t *virt_address, uint64_t* phys_add
         }
 
         /* We set it all to zero (remember, each page table no matter the type is 4096 bytes wide)*/
-        memset(pdp, 0, PAGE_SIZE);
+        memset((uint64_t*)((uint64_t)pdp + hhdmoffset), 0, PAGE_SIZE);
     }
 
     /* Set the value at index `pml4_index` in the `pml4` table (page_map points to the pml4 table) to the address of the next table and then repeat for all the tables */
@@ -155,7 +155,7 @@ void vmm_map_page(uint64_t *page_map, uint64_t *virt_address, uint64_t* phys_add
             return;
         }
 
-        memset(pd, 0, PAGE_SIZE);
+        memset((uint64_t*)((uint64_t)pd + hhdmoffset), 0, PAGE_SIZE);
     }
 
     *(uint64_t*)((uint64_t)pdp + hhdmoffset + pdp_index * 8) = (uint64_t)pd | PTE_BIT_PRESENT | PTE_BIT_RW | PTE_BIT_US;
@@ -170,7 +170,7 @@ void vmm_map_page(uint64_t *page_map, uint64_t *virt_address, uint64_t* phys_add
             return;
         }
 
-        memset(pt, 0, PAGE_SIZE);
+        memset((uint64_t*)((uint64_t)pt + hhdmoffset), 0, PAGE_SIZE);
     }
 
     *(uint64_t*)((uint64_t)pd + hhdmoffset + pd_index * 8) = (uint64_t)pt | PTE_BIT_PRESENT | PTE_BIT_RW | PTE_BIT_US;
@@ -186,14 +186,14 @@ void vmm_map_page(uint64_t *page_map, uint64_t *virt_address, uint64_t* phys_add
             return;
         }
 
-        memset(pp, 0, PAGE_SIZE);
+        memset((uint64_t*)((uint64_t)pp + hhdmoffset), 0, PAGE_SIZE);
     }
 
     *(uint64_t*)((uint64_t)pt + hhdmoffset + pt_index * 8) = (uint64_t)pp | PTE_BIT_PRESENT | PTE_BIT_RW | PTE_BIT_US;
 
     *(uint64_t*)((uint64_t)pp + hhdmoffset + pp_index * 8) = (uint64_t)phys_address | flags;
 
-    kprintf("mapped 0x{x} to 0x{xn}", virt_address, phys_address);
+    //kprintf("mapped 0x{x} to 0x{xn}", virt_address, phys_address);
 
     /* TLB flush */
     tlb_flush();

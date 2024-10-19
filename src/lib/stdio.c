@@ -65,7 +65,7 @@ int kprintf(const char *format_string, ...){
     int state = NORMAL;
     va_list a_list;
     va_start(a_list, format_string);
-    for(int i = 0; i < strlen(format_string); i++){
+    for(uint64_t i = 0; i < strlen(format_string); i++){
         char current = format_string[i]; // current char in string
         switch (state){
             case NORMAL:
