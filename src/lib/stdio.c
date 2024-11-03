@@ -208,8 +208,6 @@ int serial_kprintf(const char *format_string, ...){
 
     va_end(a_list);
 
-
-    kprintf("yea2\n");
     return 0;
 }
 
@@ -220,7 +218,7 @@ void print_char(struct flanterm_context *ft_ctx, char c){
 }
 
 void serial_print_char(char c){
-    serial_print(&c);
+    serial_write(c);
 }
 
 void print_str(struct flanterm_context *ft_ctx, char *str){

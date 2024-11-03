@@ -100,9 +100,9 @@ void _start(void){
     pmm_init();
     klog(LOG_SUCCESS, "pmm", "Done!");
 
-/*     klog(LOG_INFO, "vmm", "Setting up the page tables");
+    klog(LOG_INFO, "vmm", "Setting up the page tables");
     vmm_init();
-    klog(LOG_SUCCESS, "vmm", "Done!"); */
+    klog(LOG_SUCCESS, "vmm", "Done!");
 
     death:
     for(;;);

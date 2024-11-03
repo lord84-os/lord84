@@ -37,9 +37,8 @@ void vmm_init(){
     if(!kernel_address){
         klog(LOG_ERROR, __func__, "Kernel address not recieved");
     }
-    /* the pml4 table is 4096 bytes wide, the same size as a pmm block, so the
-    entire table can fit in one block, for which were allocating here */
-    kernel_page_map = pmm_alloc();
+
+    kernel_page_map = (uint64_t*)((uint64_t)pmm_alloc() + hhdmoffset);
 
     if(!kernel_page_map){
         klog(LOG_ERROR, __func__, "Allocating block for page map failed");
@@ -47,7 +46,7 @@ void vmm_init(){
 
     memset(kernel_page_map, 0, PAGE_SIZE);
 
-    kernel_virt = (uint64_t)(kernel_address) + hhdmoffset; // virtual address of kernel page map
+    //kernel_virt = (uint64_t)(kernel_address) + hhdmoffset; // virtual address of kernel page map
 
     // map kernel, stolen
     extern link_symbol_ptr text_start_addr, text_end_addr,
@@ -103,9 +102,9 @@ void vmm_init(){
         vmm_map_page(kernel_page_map, data_addr, phys, PTE_BIT_PRESENT | PTE_BIT_RW | PTE_BIT_NX);
     }
 
-    for(uint64_t base = 0x1000; base < 0x100000000 ; base += PAGE_SIZE){
+/*     for(uint64_t base = 0x1000; base < 0x100000000 ; base += PAGE_SIZE){
         vmm_map_page(kernel_page_map, base, base, PTE_BIT_PRESENT | PTE_BIT_RW | PTE_BIT_NX); // identity map everything in 32bit address space, maps madt and other tables
-    }
+    } */
 
     vmm_set_ctx(kernel_page_map);
 
@@ -120,7 +119,7 @@ void vmm_init(){
 uint64_t *get_lower_table(uint64_t *page_map, uint64_t offset){
 
     if((page_map[offset] & PTE_BIT_PRESENT) != 0){
-        //kprintf("found\n");
+        //serial_kprintf("found\n");
         return (uint64_t*)( ((uint64_t)page_map[offset] & 0x000ffffffffff000) + hhdmoffset);
     }
 
@@ -137,6 +136,8 @@ uint64_t *get_lower_table(uint64_t *page_map, uint64_t offset){
 
     memset((uint64_t*)((uint64_t)ret + hhdmoffset), 0, PAGE_SIZE);
 
+    //serial_kprintf("page: 0x{x} at index: {d} = 0x{xn}", (uint64_t)page_map, offset, (uint64_t)ret);
+
     page_map[offset] = (uint64_t)ret | PTE_BIT_PRESENT | PTE_BIT_RW |  PTE_BIT_US;
 
     return (uint64_t*)( (uint64_t)ret + hhdmoffset );
@@ -150,9 +151,11 @@ void vmm_map_page(uint64_t *page_map, uint64_t virt_addr, uint64_t phys_addr, ui
     uint64_t pdp_offset = (virt_addr >> 30) & 0x1ff;
     uint64_t pd_offset = (virt_addr >> 21) & 0x1ff;
     uint64_t pt_offset = (virt_addr >> 12) & 0x1ff;
-    uint64_t pp_offset = virt_addr & 0x1ff;
+    //uint64_t pp_offset = virt_addr & 0x1ff;
 
     uint64_t *pdp = get_lower_table(page_map, pml4_offset);
+
+    //erial_kprintf("pdp: 0x{xn}", (uint64_t)pdp);
 
     if(!pdp){
         klog(LOG_ERROR, __func__, "Failed to allocate PDP");
@@ -166,6 +169,8 @@ void vmm_map_page(uint64_t *page_map, uint64_t virt_addr, uint64_t phys_addr, ui
         kkill();
     }
 
+    //serial_kprintf("pd: 0x{xn}", (uint64_t)pd);
+
     uint64_t *pt = get_lower_table(pd, pd_offset);
 
     if(!pt){
@@ -173,14 +178,16 @@ void vmm_map_page(uint64_t *page_map, uint64_t virt_addr, uint64_t phys_addr, ui
         kkill();
     }
 
-    uint64_t *pp = get_lower_table(pt, pt_offset);
+    //serial_kprintf("pt: 0x{xn}", (uint64_t)pt);
+
+/*     uint64_t *pp = get_lower_table(pt, pt_offset);
 
     if(!pp){
         klog(LOG_ERROR, __func__, "Failed to allocate PDP");
         kkill();
-    }
+    } */
 
-    pp[pp_offset] = phys_addr | flags;
+    pt[pt_offset] = phys_addr | flags;
 
     asm volatile(
         "movq %%cr3, %%rax\n\
@@ -188,5 +195,47 @@ void vmm_map_page(uint64_t *page_map, uint64_t virt_addr, uint64_t phys_addr, ui
         : : : "rax"
    );
 
+}
+
+void vmm_free_page(uint64_t *page_map, uint64_t virt_addr){
+    uint64_t pml4_offset = (virt_addr >> 39) & 0x1ff;
+    uint64_t pdp_offset = (virt_addr >> 30) & 0x1ff;
+    uint64_t pd_offset = (virt_addr >> 21) & 0x1ff;
+    uint64_t pt_offset = (virt_addr >> 12) & 0x1ff;
+
+    uint64_t *pdp = get_lower_table(page_map, pml4_offset);
+
+
+    if(!pdp){
+        klog(LOG_ERROR, __func__, "Failed to allocate PDP");
+        kkill();
+    }
+
+    uint64_t *pd = get_lower_table(pdp, pdp_offset);
+
+    if(!pd){
+        klog(LOG_ERROR, __func__, "Failed to allocate PDP");
+        kkill();
+    }
+
+
+    uint64_t *pt = get_lower_table(pd, pd_offset);
+
+    if(!pt){
+        klog(LOG_ERROR, __func__, "Failed to allocate PDP");
+        kkill();
+    }
+
+    /* Free the page at the physical address pointed by the pt entry */
+    pmm_free((uint64_t*)(pt[pt_offset] & 0x000ffffffffff000));
+
+    /* Set it to zero (mark as not present) */
+    pt[pt_offset] = 0;
+
+    asm volatile(
+        "movq %%cr3, %%rax\n\
+	    movq %%rax, %%cr3\n"
+        : : : "rax"
+   );
 }
 

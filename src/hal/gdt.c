@@ -25,9 +25,9 @@ void gdt_set_entry(int num, unsigned long long base, unsigned long long limit, u
 void set_gdt(void){
     gdt_set_entry(0, 0, 0, 0, 0);               // null segment     offset 0x00
     gdt_set_entry(1, 0, 0xFFFF, 0x9A, 0xA);    // kernel code      offset 0x08
-    gdt_set_entry(2, 0, 0xFFFF, 0x92, 0xC);    // kernel data      offset 0x10
+    gdt_set_entry(2, 0, 0xFFFF, 0x92, 0xA);    // kernel data      offset 0x10
     gdt_set_entry(3, 0, 0xFFFF, 0xFA, 0xA);    // userspace code   offset 0x18
-    gdt_set_entry(4, 0, 0xFFFF, 0xF2, 0xC);    // userspace data   offset 0x20
+    gdt_set_entry(4, 0, 0xFFFF, 0xF2, 0xA);    // userspace data   offset 0x20
     s_load_gdt();
 
 }

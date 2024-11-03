@@ -34,7 +34,7 @@ void write_redir_entry(uint8_t reg, uint64_t data){
     /* First write lower 32-bits of the data to the specified IOREDTBL register */
     ioapic_write_reg(IOREDTBL(reg), data & 0xFFFFFFFF);
     /* Then write the upper 32-bits */
-    ioapic_write_reg(IOREDTBL(reg+1), data >> 32); /* fix */
+    ioapic_write_reg(IOREDTBL(reg+1), data >> 32);
 }
 
 extern madt_t *madt;
@@ -49,10 +49,5 @@ void ioapic_init(void){
     }
 
     ioapic_address = ioapic->ioapic_address + hhdmoffset;
-
-    
-
-
-
 
 }

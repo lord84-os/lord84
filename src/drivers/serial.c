@@ -40,7 +40,7 @@ void serial_init(){
     write_redir_entry(redir_entry, 0 | 44); /* broken? */
 
     /* Set DTR, RTS and enables IRQ */
-    outb(COM1 + MDM_CTRL_REG, 0b00001101);
+    //outb(COM1 + MDM_CTRL_REG, 0b00001101);
 
     /* Set loopback testing mode to see if UART werks */
     outb(COM1 + MDM_CTRL_REG, 0b00011110);
@@ -48,7 +48,7 @@ void serial_init(){
     outb(COM1, 0xAE);
 
     if(inb(COM1) != 0xAE){
-        klog(LOG_ERROR, __func__, "Serial controller failed test, serial output will not work");
+        klog(LOG_WARN, __func__, "Serial controller failed test, serial output will not work");
         return;
     }
 
