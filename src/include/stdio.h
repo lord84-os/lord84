@@ -12,11 +12,18 @@ void klog(int level, const char *func, const char *msg);
 
 int kprintf(const char *format_string, ...);
 
+int serial_kprintf(const char *format_string, ...);
+
 void print_char(struct flanterm_context *ft_ctx, char c);
 void print_str(struct flanterm_context *ft_ctx, char *str);
 void print_int(struct flanterm_context *ft_ctx, uint64_t i);
 void print_hex(struct flanterm_context *ft_ctx, uint64_t num);
 void print_bin(struct flanterm_context *ft_ctx, uint64_t num);
+
+void serial_print_char(char c);
+void serial_print_int(uint64_t i);
+void serial_print_hex(uint64_t num);
+void serial_print_bin(uint64_t num);
 
 char toupper(char c);
 

@@ -1,6 +1,7 @@
 #include <limine.h>
 #include <stdio.h>
 #include <lord84.h>
+#include <string.h>
 #include "pmm.h"
 
 static volatile struct limine_memmap_request memmap_request = {
@@ -12,20 +13,21 @@ extern uint64_t hhdmoffset;
 
 uint64_t pmm_free_page_count = 0;
 uint64_t pmm_page_count = 0;
+uint64_t mem_size = 0;
 
 struct limine_memmap_response *memmap_response;
 
 /* Freelist implementation */
 uint64_t *free_list = NULL;
 
-void pmm_free(uint64_t *addr){\
+void pmm_free(uint64_t *addr){
     uint64_t *virt_addr = (uint64_t*)((uint64_t)addr+hhdmoffset);
     /* Make the given page point to the previous free page */
     
     *virt_addr = (uint64_t)free_list;
 
     /* Make the free_list point to the newly freed page */
-    free_list = (uint64_t*)((uint64_t)(addr) + hhdmoffset);
+    free_list = virt_addr;
 
     pmm_free_page_count++;
 
@@ -42,7 +44,8 @@ uint64_t *pmm_alloc(){
     uint64_t *addr = (uint64_t*)((uint64_t)free_list - hhdmoffset);
     free_list = (uint64_t*)(*free_list);
     pmm_free_page_count--;
-
+    //kprintf("now at address 0x{xn}", (uint64_t)addr);
+    memset((uint64_t*)((uint64_t)addr+hhdmoffset), 0, 4096);
     return addr;
 }
 
@@ -55,9 +58,26 @@ void pmm_init(){
 
     memmap_response = memmap_request.response;
 
+
     struct limine_memmap_entry **entries = memmap_response->entries;
 
+    for(uint64_t i = 0; i < memmap_response->entry_count; i++){
+        switch (entries[i]->type) {
+            case LIMINE_MEMMAP_USABLE:
+                kprintf("usable: base: 0x{x}, length: 0x{xn}", entries[i]->base, entries[i]->length);
+                mem_size += entries[i]->length;
+                break;
+            default:
+                kprintf("base: 0x{x}, length: 0x{xn}", entries[i]->base, entries[i]->length);
+            
+        }
+    }
+
+    kprintf("pmm: got a total of {d}MB of memory\n", mem_size / 1048576);
+
+
     bool first_entry = true;
+
 
     uint64_t j;
     uint64_t i;
@@ -81,5 +101,4 @@ void pmm_init(){
         }
     }
 
-    kprintf("pmm: got a total of {d}MB of memory\n", (pmm_page_count * 4096) / 1048576);
 }

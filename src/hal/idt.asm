@@ -37,6 +37,10 @@ global s_isr29
 global s_isr30
 global s_isr31
 
+global s_isr44
+
+global s_isr255
+
 global s_load_idt
 
 s_isr0:
@@ -244,15 +248,16 @@ s_isr31:
     push qword 31
     jmp isr_handler
 
-s_isr33:
+s_isr44:
     
     push qword 0
-    push qword 33
+    push qword 44
     jmp isr_handler
 
-s_isr172:
+s_isr255:
+    
     push qword 0
-    push qword 172
+    push qword 255
     jmp isr_handler
 
 %macro pushaq 0

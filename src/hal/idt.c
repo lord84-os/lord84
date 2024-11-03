@@ -37,6 +37,10 @@ extern void s_isr29();
 extern void s_isr30();
 extern void s_isr31();
 
+extern void s_isr44();
+
+extern void s_isr255();
+
 extern void s_load_idt();
 
 void set_idt_descriptor(uint8_t vector, void *base, uint8_t flags){
@@ -88,6 +92,9 @@ void set_idt(void){
     set_idt_descriptor(30, s_isr30, 0x8E);
     set_idt_descriptor(31, s_isr31, 0x8E);
 
+    set_idt_descriptor(44, s_isr44, 0x8E);
+    set_idt_descriptor(255, s_isr255, 0x8E);
+
     s_load_idt();
 }
 
@@ -131,7 +138,7 @@ char *exception_messages[] =
 
 void interrupt_handler(interrupt_frame *r){
     if(r->int_no < 32){
-        kprintf("Oh no! Received interrupt {d}, '{s}'. Below is the provided stack frame{n}{n}", r->int_no, exception_messages[r->int_no]);
+        kprintf("\nOh no! Received interrupt {d}, '{s}'. Below is the provided stack frame{n}{n}", r->int_no, exception_messages[r->int_no]);
         kprintf("error code 0x{xn}", r->err);
         kprintf("rax 0x{x} | rbx 0x{x} | rcx 0x{x} | rdx 0x{xn}", r->rax, r->rbx, r->rcx, r->rdx);
         kprintf("rdi 0x{x} | rsi 0x{x} | rbp 0x{xn}", r->rdi, r->rsi, r->rbp);
@@ -139,5 +146,20 @@ void interrupt_handler(interrupt_frame *r){
         kprintf("rip 0x{x} | cs 0x{x} | ss 0x{x} | rsp 0x{x} | rflags 0x{xn}", r->rip, r->cs, r->ss, r->rsp, r->rflags);
         asm("cli; hlt");
         for(;;);
+    }
+
+    if(r->int_no == 255){
+        kprintf("The kernel has been killed. :(\n\n");
+        kprintf("rax 0x{x} | rbx 0x{x} | rcx 0x{x} | rdx 0x{xn}", r->rax, r->rbx, r->rcx, r->rdx);
+        kprintf("rdi 0x{x} | rsi 0x{x} | rbp 0x{xn}", r->rdi, r->rsi, r->rbp);
+        kprintf("r8 0x{x} | r9 0x{x} | r10 0x{x} | r11 0x{x} | r12 0x{x} | r13 0x{x} | r14 0x{x} | r15 0x{xn}", r->r8, r->r9, r->r10, r->r11, r->r12, r->r13, r->r14, r->r15);
+        kprintf("rip 0x{x} | cs 0x{x} | ss 0x{x} | rsp 0x{x} | rflags 0x{xn}", r->rip, r->cs, r->ss, r->rsp, r->rflags);
+
+        asm("cli; hlt");
+        for(;;);
+    }
+
+    if(r->int_no == 44){
+        kprintf("serial\n");
     }
 }

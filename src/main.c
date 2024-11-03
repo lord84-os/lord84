@@ -12,6 +12,7 @@
 #include "mm/pmm.h"
 #include "mm/vmm.h"
 #include "sys/acpi.h"
+#include "drivers/serial.h"
 
 static volatile struct limine_framebuffer_request framebuffer_request = {
     .id = LIMINE_FRAMEBUFFER_REQUEST,
@@ -83,27 +84,31 @@ void _start(void){
     set_idt();
     klog(LOG_SUCCESS, "idt", "Done!");
 
-    klog(LOG_INFO, "pmm", "Setting up the PMM");
-    pmm_init();
-    klog(LOG_SUCCESS, "pmm", "Done!");
-
-    klog(LOG_INFO, "vmm", "Setting up the page tables");
-    vmm_init();
-    klog(LOG_SUCCESS, "vmm", "Done!");
-
-/*     klog(LOG_INFO, "acpi", "Reading ACPI tables");
+    klog(LOG_INFO, "acpi", "Reading ACPI tables");
     acpi_init();
     klog(LOG_SUCCESS, "acpi", "Done!");
 
     klog(LOG_INFO, "apic", "Initalizing APIC");
     apic_init();
-    klog(LOG_SUCCESS, "apic", "Done!"); */
+    klog(LOG_SUCCESS, "apic", "Done!");
+
+    klog(LOG_INFO, "serial", "Initalizing serial controller");
+    serial_init();
+    klog(LOG_SUCCESS, "serial", "Done!");
+
+    klog(LOG_INFO, "pmm", "Setting up the PMM");
+    pmm_init();
+    klog(LOG_SUCCESS, "pmm", "Done!");
+
+/*     klog(LOG_INFO, "vmm", "Setting up the page tables");
+    vmm_init();
+    klog(LOG_SUCCESS, "vmm", "Done!"); */
 
     death:
     for(;;);
 }
 
 void kkill(void){
-    asm("cli;hlt");
+    asm("int $255");
     for(;;);
 }

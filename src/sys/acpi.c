@@ -39,6 +39,7 @@ uint64_t *find_acpi_table(char *signature){
 
         if(memcmp(header->signature, signature, 4) == 0){
             return (uint64_t*)(header);
+            kprintf("returning: 0x{xn}", (uint64_t)header);
         }
     }
 
