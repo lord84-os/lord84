@@ -93,7 +93,7 @@ void set_idt(void){
     set_idt_descriptor(30, s_isr30, 0x8E);
     set_idt_descriptor(31, s_isr31, 0x8E);
 
-    set_idt_descriptor(44, hpet_handler, 0x8E);
+    set_idt_descriptor(44, 0, 0x8E);
     set_idt_descriptor(255, s_isr255, 0x8E);
 
     s_load_idt();
