@@ -20,7 +20,6 @@ CFLAGS += -Wall \
 	-I src/include \
 	-O0 \
 	-g
-
 CDEBUG = -g
 LDFLAGS += -m elf_x86_64 \
     -nostdlib \

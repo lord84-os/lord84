@@ -86,6 +86,25 @@ typedef struct iso_t{
     uint16_t flags;
 }__attribute((packed)) iso_t;
 
+typedef struct fadt_t {
+    uint8_t signature[4];
+    uint32_t length;
+    uint8_t fadt_version;
+    uint8_t revision;
+    uint8_t checksum;
+    uint8_t oemid[6];
+    uint8_t oem_tableid[8];
+    uint32_t oem_revision;
+    uint32_t creator_id;
+    uint32_t creator_revision;
+    uint32_t firmware_ctrl;
+    uint32_t dsdt_addr;
+    uint8_t reserved;
+    uint8_t pm_profile;
+    uint16_t sci_int;
+
+} __attribute((packed)) fadt_t;
+
 
 
 void acpi_init(void);

@@ -95,16 +95,17 @@ void _start(void){
     klog(LOG_INFO, "serial", "Initalizing serial controller");
     serial_init();
     klog(LOG_SUCCESS, "serial", "Done!");
-
     klog(LOG_INFO, "pmm", "Setting up the PMM");
     pmm_init();
     klog(LOG_SUCCESS, "pmm", "Done!");
-
+    hpet_sleep(100);
     klog(LOG_INFO, "vmm", "Setting up the page tables");
     vmm_init();
     klog(LOG_SUCCESS, "vmm", "Done!");
+    
 
     death:
+    //asm("int $55");
     for(;;);
 }
 

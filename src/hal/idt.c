@@ -1,4 +1,5 @@
 #include "idt.h"
+#include "timer.h"
 #include <stdio.h>
 idt_descriptor idt[256] = {0};
 
@@ -92,7 +93,7 @@ void set_idt(void){
     set_idt_descriptor(30, s_isr30, 0x8E);
     set_idt_descriptor(31, s_isr31, 0x8E);
 
-    set_idt_descriptor(44, s_isr44, 0x8E);
+    set_idt_descriptor(44, hpet_handler, 0x8E);
     set_idt_descriptor(255, s_isr255, 0x8E);
 
     s_load_idt();
@@ -160,6 +161,9 @@ void interrupt_handler(interrupt_frame *r){
     }
 
     if(r->int_no == 44){
-        kprintf("serial\n");
+        kprintf("ahahahaha\n");
+        return;
     }
+
+    kprintf("DIE\n");
 }
