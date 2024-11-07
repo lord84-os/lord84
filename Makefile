@@ -74,6 +74,7 @@ all:
 	$(CC) -c src/sys/acpi.c -o $(BUILD_DIR)/acpi.o $(CFLAGS)
 
 	$(CC) -c src/drivers/serial.c -o $(BUILD_DIR)/serial.o $(CFLAGS)
+	$(CC) -c src/drivers/pmt.c -o $(BUILD_DIR)/pmt.o $(CFLAGS)
 
 
 

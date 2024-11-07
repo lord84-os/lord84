@@ -13,6 +13,7 @@
 #include "mm/vmm.h"
 #include "sys/acpi.h"
 #include "drivers/serial.h"
+#include "drivers/pmt.h"
 
 static volatile struct limine_framebuffer_request framebuffer_request = {
     .id = LIMINE_FRAMEBUFFER_REQUEST,
@@ -97,6 +98,7 @@ void _start(void){
     klog(LOG_SUCCESS, "serial", "Done!");
     klog(LOG_INFO, "pmm", "Setting up the PMM");
     pmm_init();
+    pmt_delay(1000000);
     klog(LOG_SUCCESS, "pmm", "Done!");
     klog(LOG_INFO, "vmm", "Setting up the page tables");
     vmm_init();

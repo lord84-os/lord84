@@ -64,11 +64,11 @@ void pmm_init(){
     for(uint64_t i = 0; i < memmap_response->entry_count; i++){
         switch (entries[i]->type) {
             case LIMINE_MEMMAP_USABLE:
-                kprintf("usable: base: 0x{x}, length: 0x{xn}", entries[i]->base, entries[i]->length);
+                //kprintf("usable: base: 0x{x}, length: 0x{xn}", entries[i]->base, entries[i]->length);
                 mem_size += entries[i]->length;
                 break;
             default:
-                kprintf("base: 0x{x}, length: 0x{xn}", entries[i]->base, entries[i]->length);
+                //kprintf("base: 0x{x}, length: 0x{xn}", entries[i]->base, entries[i]->length);
             
         }
     }
