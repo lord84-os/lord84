@@ -1,26 +1,36 @@
 #include "../sys/acpi.h"
+#include "../drivers/pmt.h"
 #include "timer.h"
 #include "ioapic.h"
 #include <stdio.h>
 #include <lord84.h>
 #include <cpuid.h> // GCC specific
 
-#define LAPIC_ID_REG            0x020
-#define LAPIC_EOI_REG           0x0B0
-#define LAPIC_SPURIOUS_REG      0x0F0
-#define LAPIC_ERR_REG           0x280
+#define LAPIC_ID_REG                0x020
+#define LAPIC_EOI_REG               0x0B0
+#define LAPIC_SPURIOUS_REG          0x0F0
+#define LAPIC_ERR_REG               0x280
 
-#define LAPIC_LINT0_REG         0x350
-#define LAPIC_LINT1_REG         0x360
+#define LAPIC_LINT0_REG             0x350
+#define LAPIC_LINT1_REG             0x360
 
-#define LAPIC_INITIAL_CNT_REG   0x380
-#define LAPIC_CURRENT_CNT_REG   0x390
-#define LAPIC_DIVIDE_CONF_REG   0x3E0
+#define LAPIC_LVT_TIMER_REG         0x320
+#define LAPIC_TIMER_INITIAL_CNT_REG 0x380
+#define LAPIC_TIMER_CURRENT_CNT_REG 0x390
+#define LAPIC_TIMER_DIVIDER_REG     0x3E0
+
+#define LAPIC_TIMER_MASK            (1 << 16)
+#define LAPIC_TIMER_UNMASK          0xFFFEFFFF
+
+#define LAPIC_TIMER_PERIODIC        (1 << 17)
+#define LAPIC_TIMER_VECTOR          69
+
 
 extern madt_t *madt;
 extern uint64_t hhdmoffset;
 
-uint64_t lapic_address;
+uint64_t lapic_address = 0;
+uint64_t timer_speed_us = 0;
 
 void lapic_write_reg(uint32_t reg, uint32_t data){
     *((uint32_t*)(lapic_address+reg)) = data;
@@ -30,13 +40,51 @@ uint32_t lapic_read_reg(uint32_t reg){
     return(*((uint32_t*)(lapic_address+reg)));
 }
 
+void lapic_timer_init(){
+    /* Stop the APIC timer */
+    lapic_write_reg(LAPIC_TIMER_INITIAL_CNT_REG, 0);
+
+    /* Set the divisor to 16 */
+    lapic_write_reg(LAPIC_TIMER_DIVIDER_REG, 0b11);
+
+    /* Set the intial count to max */
+    lapic_write_reg(LAPIC_TIMER_INITIAL_CNT_REG, 0xffffffff);
+
+    /* Set the timer speed in microseconds */
+    timer_speed_us = 50000;
+
+    /* Call a delay function based on the available timer */
+    pmt_delay(timer_speed_us);
+
+    /* Mask the timer (prevents interrupts) */
+    //lapic_write_reg(LAPIC_LVT_TIMER_REG, LAPIC_TIMER_MASK);
+
+    /* Determine the inital count to be used for a delay set by `timer_speed_us` */
+    uint32_t calibration = 0xffffffff - lapic_read_reg(LAPIC_TIMER_CURRENT_CNT_REG);
+
+    /* Set the timer interrupt vector and put the timer into periodic mode */
+    lapic_write_reg(LAPIC_LVT_TIMER_REG, LAPIC_TIMER_VECTOR | LAPIC_TIMER_PERIODIC);
+
+    lapic_write_reg(LAPIC_TIMER_DIVIDER_REG, 0b11);
+
+    lapic_write_reg(LAPIC_TIMER_INITIAL_CNT_REG, calibration);
+
+}
+
 void apic_init(void){
+    asm("cli");
+
     lapic_address = madt->lic_address + hhdmoffset;
 
     lapic_ao_t *lapic_ao = (lapic_ao_t*) find_ics(0x5); // Local APIC Address Override
 
+    /* If there is a lapic address override present then use that instead */
     if(lapic_ao){
-        lapic_address = lapic_ao->lapic_address + hhdmoffset;
+
+        /* Check that the field isnt 0 */
+        if(lapic_ao->lapic_address != 0){
+            lapic_address = lapic_ao->lapic_address + hhdmoffset;
+        }
     }
     
     /* Enable the lapic and set the spurious interrupt vector to 0xFF */
@@ -45,6 +93,20 @@ void apic_init(void){
     klog(LOG_INFO, __func__, "Initializing IOAPIC");
     ioapic_init();
 
-    timer_init();
+    klog(LOG_INFO, __func__, "Initalizing timers");
+    timer_init();    
+
+    klog(LOG_INFO, __func__, "Starting APIC timer");
+    lapic_timer_init();
+
+    pmt_delay(100000);
+    //kprintf("Error register: 0x{xn}", lapic_read_reg(LAPIC_ERR_REG));
+    
+    asm("sti");
+}
+
+void apic_timer_handler(){
+    kprintf("hi\n");
+    lapic_write_reg(LAPIC_EOI_REG, 0);
 
 }

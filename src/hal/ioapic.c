@@ -51,7 +51,5 @@ void ioapic_init(void){
     }
 
     ioapic_address = ioapic->ioapic_address + hhdmoffset;
-
     
-
 }

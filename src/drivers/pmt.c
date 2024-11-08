@@ -15,6 +15,9 @@ bool use_ext = false;
 
 uint64_t pmt_read_reg(gas_t X_PMTimerBlock){
     
+    /* TO FIX - address space id invalid in Bochs */
+    
+    /* Check address space ID field to understand how to access the register */
     if(X_PMTimerBlock.address_space_id == 0x00){
         /* Access through memory */
         return *((uint64_t*)X_PMTimerBlock.address);
@@ -22,6 +25,7 @@ uint64_t pmt_read_reg(gas_t X_PMTimerBlock){
         /* Access through I/O port */
         return inl(X_PMTimerBlock.address);
     }else{
+        kprintf("address id: 0x{xn}", X_PMTimerBlock.address_space_id);
         klog(LOG_ERROR, __func__, "X_PMTimerBlock address space id isn't supported!");
         return 0;
     }

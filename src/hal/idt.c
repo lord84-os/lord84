@@ -3,7 +3,7 @@
 #include <stdio.h>
 idt_descriptor idt[256] = {0};
 
-idt_register idtr = {sizeof(idt), (uint64_t)(&idt)};
+idt_register idtr = {sizeof(idt)-1, (uint64_t)(&idt)};
 
 extern void s_isr0();
 extern void s_isr1();
@@ -39,6 +39,8 @@ extern void s_isr30();
 extern void s_isr31();
 
 extern void s_isr44();
+
+extern void s_isr69();
 
 extern void s_isr255();
 
@@ -94,6 +96,7 @@ void set_idt(void){
     set_idt_descriptor(31, s_isr31, 0x8E);
 
     set_idt_descriptor(44, 0, 0x8E);
+    set_idt_descriptor(69, s_isr69, 0x8E);
     set_idt_descriptor(255, s_isr255, 0x8E);
 
     s_load_idt();
@@ -150,20 +153,12 @@ void interrupt_handler(interrupt_frame *r){
     }
 
     if(r->int_no == 255){
-        kprintf("The kernel has been killed. :(\n\n");
-        kprintf("rax 0x{x} | rbx 0x{x} | rcx 0x{x} | rdx 0x{xn}", r->rax, r->rbx, r->rcx, r->rdx);
-        kprintf("rdi 0x{x} | rsi 0x{x} | rbp 0x{xn}", r->rdi, r->rsi, r->rbp);
-        kprintf("r8 0x{x} | r9 0x{x} | r10 0x{x} | r11 0x{x} | r12 0x{x} | r13 0x{x} | r14 0x{x} | r15 0x{xn}", r->r8, r->r9, r->r10, r->r11, r->r12, r->r13, r->r14, r->r15);
-        kprintf("rip 0x{x} | cs 0x{x} | ss 0x{x} | rsp 0x{x} | rflags 0x{xn}", r->rip, r->cs, r->ss, r->rsp, r->rflags);
-
-        asm("cli; hlt");
-        for(;;);
+        kprintf("hey");
     }
 
-    if(r->int_no == 44){
-        kprintf("ahahahaha\n");
-        return;
+    if(r->int_no == 69){
+        apic_timer_handler();
     }
 
-    kprintf("DIE\n");
+    return;
 }

@@ -46,8 +46,6 @@ void vmm_init(){
 
     memset(kernel_page_map, 0, PAGE_SIZE);
 
-    //kernel_virt = (uint64_t)(kernel_address) + hhdmoffset; // virtual address of kernel page map
-
     // map kernel, stolen
     extern link_symbol_ptr text_start_addr, text_end_addr,
         rodata_start_addr, rodata_end_addr,
@@ -102,10 +100,6 @@ void vmm_init(){
         vmm_map_page(kernel_page_map, data_addr, phys, PTE_BIT_PRESENT | PTE_BIT_RW | PTE_BIT_NX);
     }
 
-/*     for(uint64_t base = 0x1000; base < 0x100000000 ; base += PAGE_SIZE){
-        vmm_map_page(kernel_page_map, base, base, PTE_BIT_PRESENT | PTE_BIT_RW | PTE_BIT_NX); // identity map everything in 32bit address space, maps madt and other tables
-    } */
-
     vmm_set_ctx(kernel_page_map);
 
     asm volatile(
@@ -140,7 +134,7 @@ uint64_t *get_lower_table(uint64_t *page_map, uint64_t offset){
 
     page_map[offset] = (uint64_t)ret | PTE_BIT_PRESENT | PTE_BIT_RW |  PTE_BIT_US;
 
-    return (uint64_t*)( (uint64_t)ret + hhdmoffset );
+    return (uint64_t*)((uint64_t)ret + hhdmoffset);
 
 
 }

@@ -67,8 +67,6 @@ void _start(void){
             0
     );
 
-    /* initialize flanterm */
-
     kprintf("Welcome to lord84{n}");
 
     extern link_symbol_ptr text_start_addr, text_end_addr;
@@ -85,6 +83,10 @@ void _start(void){
     set_idt();
     klog(LOG_SUCCESS, "idt", "Done!");
 
+    asm("int $255");
+
+    for(;;);
+
     klog(LOG_INFO, "acpi", "Reading ACPI tables");
     acpi_init();
     klog(LOG_SUCCESS, "acpi", "Done!");
@@ -98,7 +100,7 @@ void _start(void){
     klog(LOG_SUCCESS, "serial", "Done!");
     klog(LOG_INFO, "pmm", "Setting up the PMM");
     pmm_init();
-    pmt_delay(1000000);
+    //pmt_delay(1000000);
     klog(LOG_SUCCESS, "pmm", "Done!");
     klog(LOG_INFO, "vmm", "Setting up the page tables");
     vmm_init();
@@ -106,7 +108,6 @@ void _start(void){
     
 
     death:
-    //asm("int $55");
     for(;;);
 }
 
