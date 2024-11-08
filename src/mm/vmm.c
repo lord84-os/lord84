@@ -5,6 +5,7 @@
 #include <limine.h>
 #include "pmm.h"
 #include "vmm.h"
+#include "../hal/apic.h"
 
 
 #define PAGE_SIZE 4096
@@ -99,6 +100,11 @@ void vmm_init(){
         uintptr_t phys = data_addr - kernel_address->virtual_base + kernel_address->physical_base;
         vmm_map_page(kernel_page_map, data_addr, phys, PTE_BIT_PRESENT | PTE_BIT_RW | PTE_BIT_NX);
     }
+
+    extern uint64_t lapic_address;
+
+    /* Map the APIC */
+    vmm_map_page(kernel_page_map, lapic_address, lapic_address - hhdmoffset, PTE_BIT_PRESENT | PTE_BIT_RW | PTE_BIT_NX);
 
     vmm_set_ctx(kernel_page_map);
 

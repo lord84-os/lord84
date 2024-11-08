@@ -83,10 +83,6 @@ void _start(void){
     set_idt();
     klog(LOG_SUCCESS, "idt", "Done!");
 
-    asm("int $255");
-
-    for(;;);
-
     klog(LOG_INFO, "acpi", "Reading ACPI tables");
     acpi_init();
     klog(LOG_SUCCESS, "acpi", "Done!");
@@ -98,10 +94,13 @@ void _start(void){
     klog(LOG_INFO, "serial", "Initalizing serial controller");
     serial_init();
     klog(LOG_SUCCESS, "serial", "Done!");
+
     klog(LOG_INFO, "pmm", "Setting up the PMM");
     pmm_init();
-    //pmt_delay(1000000);
     klog(LOG_SUCCESS, "pmm", "Done!");
+
+    apic_sleep(1000);
+
     klog(LOG_INFO, "vmm", "Setting up the page tables");
     vmm_init();
     klog(LOG_SUCCESS, "vmm", "Done!");
@@ -112,6 +111,6 @@ void _start(void){
 }
 
 void kkill(void){
-    asm("int $255");
+    asm volatile("cli; hlt");
     for(;;);
 }

@@ -29,6 +29,8 @@
 extern madt_t *madt;
 extern uint64_t hhdmoffset;
 
+uint64_t lapic_timer_ticks = 0;
+
 uint64_t lapic_address = 0;
 uint64_t timer_speed_us = 0;
 
@@ -38,6 +40,13 @@ void lapic_write_reg(uint32_t reg, uint32_t data){
 
 uint32_t lapic_read_reg(uint32_t reg){
     return(*((uint32_t*)(lapic_address+reg)));
+}
+
+void apic_sleep(int ms){
+    int curcnt = lapic_timer_ticks;
+    while (lapic_timer_ticks - curcnt < ms) {
+        asm("nop");
+    }
 }
 
 void lapic_timer_init(){
@@ -51,13 +60,13 @@ void lapic_timer_init(){
     lapic_write_reg(LAPIC_TIMER_INITIAL_CNT_REG, 0xffffffff);
 
     /* Set the timer speed in microseconds */
-    timer_speed_us = 50000;
+    timer_speed_us = 1000;
 
     /* Call a delay function based on the available timer */
     pmt_delay(timer_speed_us);
 
     /* Mask the timer (prevents interrupts) */
-    //lapic_write_reg(LAPIC_LVT_TIMER_REG, LAPIC_TIMER_MASK);
+    lapic_write_reg(LAPIC_LVT_TIMER_REG, LAPIC_TIMER_MASK);
 
     /* Determine the inital count to be used for a delay set by `timer_speed_us` */
     uint32_t calibration = 0xffffffff - lapic_read_reg(LAPIC_TIMER_CURRENT_CNT_REG);
@@ -65,8 +74,7 @@ void lapic_timer_init(){
     /* Set the timer interrupt vector and put the timer into periodic mode */
     lapic_write_reg(LAPIC_LVT_TIMER_REG, LAPIC_TIMER_VECTOR | LAPIC_TIMER_PERIODIC);
 
-    lapic_write_reg(LAPIC_TIMER_DIVIDER_REG, 0b11);
-
+    /* Set the inital count to the calibration */
     lapic_write_reg(LAPIC_TIMER_INITIAL_CNT_REG, calibration);
 
 }
@@ -80,7 +88,6 @@ void apic_init(void){
 
     /* If there is a lapic address override present then use that instead */
     if(lapic_ao){
-
         /* Check that the field isnt 0 */
         if(lapic_ao->lapic_address != 0){
             lapic_address = lapic_ao->lapic_address + hhdmoffset;
@@ -100,13 +107,11 @@ void apic_init(void){
     lapic_timer_init();
 
     pmt_delay(100000);
-    //kprintf("Error register: 0x{xn}", lapic_read_reg(LAPIC_ERR_REG));
     
     asm("sti");
 }
 
 void apic_timer_handler(){
-    kprintf("hi\n");
     lapic_write_reg(LAPIC_EOI_REG, 0);
-
+    lapic_timer_ticks++;
 }
