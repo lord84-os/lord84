@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <lord84.h>
 #include <string.h>
+#include <stdalign.h>
 #include "acpi.h"
 
 static volatile struct limine_rsdp_request rsdp_request = {
@@ -38,8 +39,7 @@ uint64_t *find_acpi_table(char *signature){
         }
 
         if(memcmp(header->signature, signature, 4) == 0){
-            return (uint64_t*)(header);
-            kprintf("returning: 0x{xn}", (uint64_t)header);
+            return (uint64_t*)header;
         }
     }
 
@@ -48,8 +48,6 @@ uint64_t *find_acpi_table(char *signature){
 }
 
 void acpi_init(void){
-
-    bool use_xsdt = false;
 
     if(rsdp_request.response == NULL){
         klog(LOG_ERROR, "acpi", "RSDP request is NULL");
@@ -62,7 +60,6 @@ void acpi_init(void){
 
     /* If the systems ACPI revision is higher/equal than 2, then use XSDT */
     if(rsdp->revision >= 2){
-        use_xsdt = true;
         rsdt = NULL;
         xsdt = (xsdt_t*)(rsdp->xsdt_address + hhdmoffset);
         klog(LOG_INFO, "acpi", "Using XSDT header");

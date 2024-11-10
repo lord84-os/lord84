@@ -9,6 +9,7 @@
 #include "hal/idt.h"
 #include "hal/apic.h"
 #include "hal/timer.h"
+#include "hal/smp.h"
 #include "mm/pmm.h"
 #include "mm/vmm.h"
 #include "sys/acpi.h"
@@ -95,16 +96,28 @@ void _start(void){
     serial_init();
     klog(LOG_SUCCESS, "serial", "Done!");
 
+    klog(LOG_INFO, "smp", "Starting APs");
+    smp_init();
+    klog(LOG_SUCCESS, "smp", "Done!");
+
     klog(LOG_INFO, "pmm", "Setting up the PMM");
     pmm_init();
     klog(LOG_SUCCESS, "pmm", "Done!");
-
-    apic_sleep(1000);
 
     klog(LOG_INFO, "vmm", "Setting up the page tables");
     vmm_init();
     klog(LOG_SUCCESS, "vmm", "Done!");
     
+    kprintf("Allocating 255 bytes of memory: {n}");
+    uint64_t* dick = kmalloc(sizeof(uint64_t));
+    kprintf("Done!: 0x{xn}", dick);
+
+    *dick = 7;
+
+    extern uint64_t heap_free_page_count;
+
+    kprintf("free: {dn}", heap_free_page_count);
+
 
     death:
     for(;;);

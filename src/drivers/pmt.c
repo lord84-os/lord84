@@ -3,6 +3,7 @@
 #include <lord84.h>
 #include <io.h>
 
+
 #define PMT_TIMER_RATE 3579545
 
 #define X_PMT_TMR_BLOCK_OFFSET 208 
@@ -25,7 +26,7 @@ uint64_t pmt_read_reg(gas_t X_PMTimerBlock){
         /* Access through I/O port */
         return inl(X_PMTimerBlock.address);
     }else{
-        kprintf("address id: 0x{xn}", X_PMTimerBlock.address_space_id);
+        serial_kprintf("address id: 0x{xn}", X_PMTimerBlock.address_space_id);
         klog(LOG_ERROR, __func__, "X_PMTimerBlock address space id isn't supported!");
         return 0;
     }
@@ -46,7 +47,7 @@ int pmt_init(){
 
     /* If ACPI revision is over or equal 2 and if X_PMTimerBlock isnt 0, then use X_PMTimerBlock */
     if(fadt->header.revision >= 2 && fadt->X_PMTimerBlock.address != 0 && (fadt->header.length >= X_PMT_TMR_BLOCK_OFFSET)){
-        kprintf("pmt: Using the X_PMTimerBlock\n");
+        serial_kprintf("pmt: Using the X_PMTimerBlock\n");
 
         use_ext = true;
     }

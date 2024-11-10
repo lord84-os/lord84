@@ -5,10 +5,8 @@
 #include <limine.h>
 #include "pmm.h"
 #include "vmm.h"
+#include "kmem.h"
 #include "../hal/apic.h"
-
-
-#define PAGE_SIZE 4096
 
 struct limine_kernel_address_request kernel_addr_request = {
     .id = LIMINE_KERNEL_ADDRESS_REQUEST,
@@ -35,6 +33,7 @@ void vmm_set_ctx(uint64_t *page_map){
 void vmm_init(){
     
     struct limine_kernel_address_response *kernel_address = kernel_addr_request.response;
+
     if(!kernel_address){
         klog(LOG_ERROR, __func__, "Kernel address not recieved");
     }
@@ -113,13 +112,14 @@ void vmm_init(){
 	   movq %%rax, %%cr3\n"
         : : : "rax"
    );
+
+   kernel_heap_init();
     
 }
 
 uint64_t *get_lower_table(uint64_t *page_map, uint64_t offset){
 
     if((page_map[offset] & PTE_BIT_PRESENT) != 0){
-        //serial_kprintf("found\n");
         return (uint64_t*)( ((uint64_t)page_map[offset] & 0x000ffffffffff000) + hhdmoffset);
     }
 
@@ -136,8 +136,6 @@ uint64_t *get_lower_table(uint64_t *page_map, uint64_t offset){
 
     memset((uint64_t*)((uint64_t)ret + hhdmoffset), 0, PAGE_SIZE);
 
-    //serial_kprintf("page: 0x{x} at index: {d} = 0x{xn}", (uint64_t)page_map, offset, (uint64_t)ret);
-
     page_map[offset] = (uint64_t)ret | PTE_BIT_PRESENT | PTE_BIT_RW |  PTE_BIT_US;
 
     return (uint64_t*)((uint64_t)ret + hhdmoffset);
@@ -151,11 +149,8 @@ void vmm_map_page(uint64_t *page_map, uint64_t virt_addr, uint64_t phys_addr, ui
     uint64_t pdp_offset = (virt_addr >> 30) & 0x1ff;
     uint64_t pd_offset = (virt_addr >> 21) & 0x1ff;
     uint64_t pt_offset = (virt_addr >> 12) & 0x1ff;
-    //uint64_t pp_offset = virt_addr & 0x1ff;
 
     uint64_t *pdp = get_lower_table(page_map, pml4_offset);
-
-    //erial_kprintf("pdp: 0x{xn}", (uint64_t)pdp);
 
     if(!pdp){
         klog(LOG_ERROR, __func__, "Failed to allocate PDP");
@@ -169,23 +164,12 @@ void vmm_map_page(uint64_t *page_map, uint64_t virt_addr, uint64_t phys_addr, ui
         kkill();
     }
 
-    //serial_kprintf("pd: 0x{xn}", (uint64_t)pd);
-
     uint64_t *pt = get_lower_table(pd, pd_offset);
 
     if(!pt){
         klog(LOG_ERROR, __func__, "Failed to allocate PDP");
         kkill();
     }
-
-    //serial_kprintf("pt: 0x{xn}", (uint64_t)pt);
-
-/*     uint64_t *pp = get_lower_table(pt, pt_offset);
-
-    if(!pp){
-        klog(LOG_ERROR, __func__, "Failed to allocate PDP");
-        kkill();
-    } */
 
     pt[pt_offset] = phys_addr | flags;
 

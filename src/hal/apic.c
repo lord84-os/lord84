@@ -42,7 +42,7 @@ uint32_t lapic_read_reg(uint32_t reg){
     return(*((uint32_t*)(lapic_address+reg)));
 }
 
-void apic_sleep(int ms){
+void apic_sleep(uint64_t ms){
     int curcnt = lapic_timer_ticks;
     while (lapic_timer_ticks - curcnt < ms) {
         asm("nop");
@@ -79,6 +79,7 @@ void lapic_timer_init(){
 
 }
 
+
 void apic_init(void){
     asm("cli");
 
@@ -97,16 +98,14 @@ void apic_init(void){
     /* Enable the lapic and set the spurious interrupt vector to 0xFF */
     lapic_write_reg(LAPIC_SPURIOUS_REG, 0x1FF);
 
-    klog(LOG_INFO, __func__, "Initializing IOAPIC");
+    /* Initialize the IOAPIC */
     ioapic_init();
 
-    klog(LOG_INFO, __func__, "Initalizing timers");
+    /* Start the timers for calibration of the APIC timer */
     timer_init();    
 
-    klog(LOG_INFO, __func__, "Starting APIC timer");
+    /* Start the APIC timer */
     lapic_timer_init();
-
-    pmt_delay(100000);
     
     asm("sti");
 }

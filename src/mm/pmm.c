@@ -68,6 +68,7 @@ void pmm_init(){
                 mem_size += entries[i]->length;
                 break;
             default:
+                ;
                 //kprintf("base: 0x{x}, length: 0x{xn}", entries[i]->base, entries[i]->length);
             
         }

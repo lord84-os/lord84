@@ -68,8 +68,11 @@ all:
 	$(CC) -c src/hal/ioapic.c -o $(BUILD_DIR)/ioapic.o $(CFLAGS)
 	$(CC) -c src/hal/timer.c -o $(BUILD_DIR)/timer.o $(CFLAGS)
 
+	$(CC) -c src/hal/smp.c -o $(BUILD_DIR)/smp.o $(CFLAGS)
+
 	$(CC) -c src/mm/pmm.c -o $(BUILD_DIR)/pmm.o $(CFLAGS)
 	$(CC) -c src/mm/vmm.c -o $(BUILD_DIR)/vmm.o $(CFLAGS)
+	$(CC) -c src/mm/kmem.c -o $(BUILD_DIR)/kmem.o $(CFLAGS)
 
 	$(CC) -c src/sys/acpi.c -o $(BUILD_DIR)/acpi.o $(CFLAGS)
 
