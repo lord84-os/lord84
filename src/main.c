@@ -13,6 +13,7 @@
 #include "mm/pmm.h"
 #include "mm/vmm.h"
 #include "sys/acpi.h"
+#include "sys/pci.h"
 #include "drivers/serial.h"
 #include "drivers/pmt.h"
 
@@ -108,16 +109,19 @@ void _start(void){
     vmm_init();
     klog(LOG_SUCCESS, "vmm", "Done!");
     
-    kprintf("Allocating 255 bytes of memory: {n}");
+/*     kprintf("Allocating 255 bytes of memory: {n}");
     uint64_t* dick = kmalloc(sizeof(uint64_t));
     kprintf("Done!: 0x{xn}", dick);
 
-    *dick = 7;
+    *dick = 7; */
 
     extern uint64_t heap_free_page_count;
 
     kprintf("free: {dn}", heap_free_page_count);
 
+    klog(LOG_INFO, "pci", "Getting le pci");
+    pci_init();
+    klog(LOG_SUCCESS, "pci", "Done!");
 
     death:
     for(;;);

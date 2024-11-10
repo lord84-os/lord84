@@ -75,6 +75,7 @@ all:
 	$(CC) -c src/mm/kmem.c -o $(BUILD_DIR)/kmem.o $(CFLAGS)
 
 	$(CC) -c src/sys/acpi.c -o $(BUILD_DIR)/acpi.o $(CFLAGS)
+	$(CC) -c src/sys/pci.c -o $(BUILD_DIR)/pci.o $(CFLAGS)
 
 	$(CC) -c src/drivers/serial.c -o $(BUILD_DIR)/serial.o $(CFLAGS)
 	$(CC) -c src/drivers/pmt.c -o $(BUILD_DIR)/pmt.o $(CFLAGS)
@@ -107,3 +108,6 @@ all:
 
 	# Install Limine stage 1 and 2 for legacy BIOS boot.
 	./limine/limine bios-install $(BUILD_DIR)/lord84.iso
+
+disk:
+	dd if=/dev/zero of=disk.img bs=1M count=128

@@ -6,6 +6,7 @@
 #include "pmm.h"
 #include "vmm.h"
 #include "kmem.h"
+#include "../sys/acpi.h"
 #include "../hal/apic.h"
 
 struct limine_kernel_address_request kernel_addr_request = {
@@ -105,6 +106,24 @@ void vmm_init(){
     /* Map the APIC */
     vmm_map_page(kernel_page_map, lapic_address, lapic_address - hhdmoffset, PTE_BIT_PRESENT | PTE_BIT_RW | PTE_BIT_NX);
 
+    /* Map the ACPI tables */
+    extern xsdt_t *xsdt;
+    extern rsdt_t *rsdt;
+
+    if(!xsdt && rsdt){
+        /* Map the amount of pages occupied by the RSDT + 1, because even if it doesn't
+           fill an entire page it still requires a page */
+        for(uint64_t i = 0; i < rsdt->header.length / PAGE_SIZE + 1; i++){
+            kprintf("mapping 0x{xn}", (uint64_t)rsdt + i * PAGE_SIZE);
+            vmm_map_page(kernel_page_map, (uint64_t)rsdt + i * PAGE_SIZE, ((uint64_t)rsdt - hhdmoffset) + i * PAGE_SIZE, PTE_BIT_PRESENT | PTE_BIT_RW | PTE_BIT_NX);
+        }
+    }else{
+        for(uint64_t i = 0; i < xsdt->header.length / PAGE_SIZE + 1; i++){
+            kprintf("mapping 0x{xn}", (uint64_t)xsdt + i * PAGE_SIZE);
+            vmm_map_page(kernel_page_map, (uint64_t)xsdt + i * PAGE_SIZE, ((uint64_t)xsdt - hhdmoffset) + i * PAGE_SIZE, PTE_BIT_PRESENT | PTE_BIT_RW | PTE_BIT_NX);
+        }
+    }
+
     vmm_set_ctx(kernel_page_map);
 
     asm volatile(
@@ -113,7 +132,7 @@ void vmm_init(){
         : : : "rax"
    );
 
-   kernel_heap_init();
+   //kernel_heap_init(); <-- fix, very slow
     
 }
 

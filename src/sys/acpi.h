@@ -173,8 +173,19 @@ typedef struct fadt_t{
 
 }__attribute((packed)) fadt_t;
 
+typedef struct conf_space_t {
+    uint64_t base_ecm;
+    uint16_t pci_seg_group;
+    uint8_t start_pci_num;
+    uint8_t end_pci_num;
+    uint32_t reserved;
+}__attribute((packed)) conf_space_t;
 
-
+typedef struct mcfg_t {
+    desc_header_t header;
+    uint64_t reserved;
+    conf_space_t conf_spaces[];
+}__attribute((packed)) mcfg_t;
 
 void acpi_init(void);
 uint64_t *find_acpi_table(char *signature);

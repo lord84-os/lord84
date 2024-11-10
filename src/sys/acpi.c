@@ -38,7 +38,10 @@ uint64_t *find_acpi_table(char *signature){
             header = (desc_header_t*)(rsdt->entries_base[i]);
         }
 
-        if(memcmp(header->signature, signature, 4) == 0){
+        /* Get the virtual address of the header so we can access its signature */
+        desc_header_t *virt = (desc_header_t*)((uint64_t)header + hhdmoffset);
+
+        if(memcmp(virt->signature, signature, 4) == 0){
             return (uint64_t*)header;
         }
     }

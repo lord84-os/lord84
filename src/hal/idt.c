@@ -141,6 +141,7 @@ char *exception_messages[] =
 };
 
 void interrupt_handler(interrupt_frame *r){
+
     if(r->int_no < 32){
         kprintf("\nOh no! Received interrupt {d}, '{s}'. Below is the provided stack frame{n}{n}", r->int_no, exception_messages[r->int_no]);
         kprintf("error code 0x{xn}", r->err);
