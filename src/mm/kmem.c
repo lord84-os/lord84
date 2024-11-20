@@ -25,39 +25,25 @@ extern uint64_t hhdmoffset;
 
 void kernel_heap_init(){
 
-    bool suitable_place_found = false;
+    extern uint64_t kernel_end;
 
-    struct limine_memmap_entry **entries = memmap_response->entries;
+    /* Place the kernel heap at the end of the executables memory */
+    kernel_heap_start = kernel_end + PAGE_SIZE;
 
-    /* Place the heap at the first usable address */
-    for(uint64_t i = 0; i < memmap_response->entry_count; i++){
-        if(entries[i]->type == LIMINE_MEMMAP_USABLE){
+    kprintf("kernel_heap_start: 0x{xn}", kernel_heap_start);
 
-            if(entries[i]->length < KERNEL_HEAP_SIZE){
-                continue;
-            }
+    int ret = vmm_map_continous_pages(kernel_heap_start, KERNEL_HEAP_SIZE / PAGE_SIZE + 1, PTE_BIT_PRESENT | PTE_BIT_RW | PTE_BIT_NX);
 
-            suitable_place_found = true;
-            kernel_heap_start = entries[i]->base;
-            kernel_heap_end = kernel_heap_start + KERNEL_HEAP_SIZE;
-
-            break;
-
-        }
+    if(ret == -1){
+        klog(LOG_ERROR, __func__, "Failed to allocate kernel heap!\n");
+        kkill();
+    }
+    for(uint64_t j = KERNEL_HEAP_SIZE / PAGE_SIZE; j > 0; j--){
+        heap_free((uint64_t*)(kernel_heap_start + j * PAGE_SIZE));
+        serial_kprintf("0x{xn}", (kernel_heap_start + j * PAGE_SIZE));
     }
 
-    if(!suitable_place_found){
-        klog(LOG_ERROR, __func__, "Failed to find a suitable place for the kernel heap");
-    }
-
-    /* Set the heap as used in the PMM --- WARNING - SUS */
-    for(uint64_t j = 0; j < KERNEL_HEAP_SIZE; j++){
-        pmm_alloc();
-    }
-
-    for(uint64_t j = 0; j < KERNEL_HEAP_SIZE; j += 4096){
-        heap_free((uint64_t*)(kernel_heap_start + hhdmoffset + j));
-    }
+    heap_free_page_count = KERNEL_HEAP_SIZE / PAGE_SIZE;
 
     kprintf("Free heap pages: {dn}", heap_free_page_count);
 
@@ -68,7 +54,9 @@ void kernel_heap_init(){
 void *kmalloc(uint64_t size){
 
     /* How many pages to allocate */
-    uint64_t pages_to_alloc = size / PAGE_SIZE;
+    uint64_t pages_to_alloc = ALIGN_UP(size, PAGE_SIZE) / PAGE_SIZE;
+
+    kprintf("pages_to_alloc: {dn}", pages_to_alloc);
 
     /* Get the first page, which we will return to the callee */
     uint64_t *ret = heap_alloc();
@@ -77,6 +65,8 @@ void *kmalloc(uint64_t size){
         klog(LOG_ERROR, __func__, "kmalloc: Failed to allocate memory");
         kkill();
     }
+
+    kprintf("ret: 0x{x}", (uint64_t)ret);
 
     /* Allocate the rest of the pages */
     for(uint64_t i = 0; i < pages_to_alloc; i++){
@@ -87,6 +77,12 @@ void *kmalloc(uint64_t size){
     }
 
     return ret;
+}
+
+void kfree(void *addr){
+
+    /* Determine how many pages this address had allocated */
+    uint64_t size = (uint64_t)addr / (uint64_t)kernel_heap_start;
 }
 
 void heap_free(uint64_t *addr){
@@ -104,15 +100,14 @@ void heap_free(uint64_t *addr){
 uint64_t *heap_alloc(){
 
     if(heap_free_page_count <= 0){
-        kprintf("Hey!\n");
+        kprintf("kmem: Heap is out of memory!\n");
         return NULL;
     }
 
     /* Fetch the address of the free page in free_list and make it point to the next free page */
+    uint64_t *addr = heap_free_list;
     heap_free_list = (uint64_t*)(*heap_free_list);
     heap_free_page_count--;
 
-    memset(heap_free_list, 0, 4096);
-
-    return heap_free_list;
+    return addr;
 }

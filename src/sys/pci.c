@@ -6,6 +6,7 @@
 
 #define PCIE_CONF_SPACE_WIDTH       4096
 #define PCI_CONF_SPACE_WIDTH        256
+#define PCI_BUS_MAX_DEVICES         32
 
 #define PCI_HEADER_TYPE_GENERAL     0x0         // General device
 #define PCI_HEADER_TYPE_PCI2PCI     0x1         // PCI to PCI bridge
@@ -21,6 +22,7 @@ uint8_t start_pci_num = 0;
 uint8_t end_pci_num = 0;
 
 extern uint64_t hhdmoffset;
+extern uint64_t *kernel_page_map;
 
 void parse_conf_space(){
     uint64_t num = (mcfg->header.length - sizeof(desc_header_t)) / sizeof(conf_space_t);
@@ -50,45 +52,10 @@ void enumerate_conf_space(){
     uint64_t device_id = 0;
 
     for(uint64_t i = 0; i < end_pci_num; i++){
-
-        /* If vendor id is 0xffff, that means that this segment is unimplemented */
-        if(header->header.vendor_id == 0xffff){
-            header = (pci_header_0_t*)((uint64_t)header + PCIE_CONF_SPACE_WIDTH);
-            continue;
-        }
-
         uint64_t header_type = header->header.header_type;
-
-        switch (header_type) {
-            case PCI_HEADER_TYPE_GENERAL:
-                /* This current structure is fine */
-                kprintf("pci: device: 0x{x} type: 0x{x} class: 0x{x} subclass: 0x{x} vendorid: 0x{xn}", header->header.device_id, header->header.header_type, header->header.class_code, header->header.subclass, header->header.vendor_id);
-                serial_kprintf("pci: device: 0x{x} type: 0x{x} class: 0x{x} subclass: 0x{x} vendorid: 0x{xn}", header->header.device_id, header->header.header_type, header->header.class_code, header->header.subclass, header->header.vendor_id);
-                break;
-            case PCI_HEADER_TYPE_PCI2PCI:
-                /* Cast the structure to a type 1 structure (PCI to PCI bridge) */
-                ;
-                pci_header_1_t *type_1 = (pci_header_1_t*)header;
-
-                kprintf("pci: device: 0x{x} type: 0x{x} class: 0x{x} subclass: 0x{x} vendorid: 0x{xn}", type_1->header.device_id, type_1->header.header_type, type_1->header.class_code, type_1->header.subclass, type_1->header.vendor_id);
-                serial_kprintf("pci: device: 0x{x} type: 0x{x} class: 0x{x} subclass: 0x{x} vendorid: 0x{xn}", type_1->header.device_id, type_1->header.header_type, type_1->header.class_code, type_1->header.subclass, type_1->header.vendor_id);
-                break;
-            default:
-                /* Check if this is a multifunction header */
-                if((header_type & PCI_HEADER_TYPE_MULTI) != 0){
-                    /* Mask the 7th bit (multi-function bit) so we get the header type */
-                    uint64_t multi_header_type = header_type & 0x3f;
-
-                    for(uint64_t i = 0; i < PCI_FUNCTION_MAX; i++){
-
-                    }
-
-
-
-                }
+        for(uint64_t j = 0; j < 32; j++){
+            check_device(i, j);
         }
-        header = (pci_header_0_t*)((uint64_t)header + PCIE_CONF_SPACE_WIDTH);
-
     }
 
 }
@@ -106,9 +73,9 @@ void pci_init(){
 
     parse_conf_space();
 
-    /* Map the base address to virtual memory so we can access it */
     extern uint64_t *kernel_page_map;
 
+    /* Map the initial bus */
     for(uint64_t i = 0; i < end_pci_num; i++){
         vmm_map_page(kernel_page_map, config_space_base_addr + i * PCIE_CONF_SPACE_WIDTH, config_space_base_addr + i * PCIE_CONF_SPACE_WIDTH - hhdmoffset, PTE_BIT_PRESENT | PTE_BIT_RW | PTE_BIT_NX);
     }
@@ -120,7 +87,11 @@ void pci_init(){
     enumerate_conf_space();
 }
 
-void check_device(uint64_t bus, uint64_t device, pci_header_t *header){
+void check_device(uint64_t bus, uint64_t device){
+
+    pci_header_t *header = (pci_header_t*)get_header(bus, device, 0);
+
+    vmm_map_page(kernel_page_map, (uint64_t)header, (uint64_t)header - hhdmoffset, PTE_BIT_PRESENT | PTE_BIT_RW | PTE_BIT_NX);
 
     /* If vendor id is 0xffff, that means that this device is unimplemented */
     if(header->vendor_id == 0xffff){
@@ -129,20 +100,35 @@ void check_device(uint64_t bus, uint64_t device, pci_header_t *header){
 
     if((header->header_type & PCI_HEADER_TYPE_MULTI) != 0){
         /* Mask the 7th bit (multi-function bit) so we get the header type */
-        uint64_t multi_header_type = multi_header_type & 0x3f;
+        uint64_t multi_header_type = header->header_type & 0x3f;
 
         for(uint64_t function = 0; function < PCI_FUNCTION_MAX; function++){
             uint64_t *addr = (uint64_t*)(config_space_base_addr + ((bus) << 20 | device << 15 | function << 12));
             pci_header_t *function = (pci_header_t*)((uint64_t)addr);
-            kprintf("pci multi: device: 0x{x} type: 0x{x} class: 0x{x} subclass: 0x{x} vendorid: 0x{xn}", function->device_id, function->header_type, function->class_code, function->subclass, function->vendor_id);
-            serial_kprintf("pci multi: device: 0x{x} type: 0x{x} class: 0x{x} subclass: 0x{x} vendorid: 0x{xn}", function->device_id, function->header_type, function->class_code, function->subclass, function->vendor_id);
-        }
 
-        return;
+            vmm_map_page(kernel_page_map, (uint64_t)function, (uint64_t)function - hhdmoffset, PTE_BIT_PRESENT | PTE_BIT_RW | PTE_BIT_NX);
+
+            if(function->vendor_id != 0xffff){
+                kprintf("pci multi: bus: 0x{x} device: 0x{x} type: 0x{x} class: 0x{x} subclass: 0x{x} vendorid: 0x{xn}", bus, function->device_id, multi_header_type, function->class_code, function->subclass, function->vendor_id);
+                serial_kprintf("pci multi: bus: 0x{x} device: 0x{x} type: 0x{x} class: 0x{x} subclass: 0x{x} vendorid: 0x{xn}", bus, function->device_id, multi_header_type, function->class_code, function->subclass, function->vendor_id);
+            }
+        }
     }
 
-    kprintf("pci: device: 0x{x} type: 0x{x} class: 0x{x} subclass: 0x{x} vendorid: 0x{xn}", header->device_id, header->header_type, header->class_code, header->subclass, header->vendor_id);
-    serial_kprintf("pci: device: 0x{x} type: 0x{x} class: 0x{x} subclass: 0x{x} vendorid: 0x{xn}", header->device_id, header->header_type, header->class_code, header->subclass, header->vendor_id);
+    kprintf("pci: bus: 0x{x} device: 0x{x} type: 0x{x} class: 0x{x} subclass: 0x{x} vendorid: 0x{xn}", bus, header->device_id, header->header_type, header->class_code, header->subclass, header->vendor_id);
+    serial_kprintf("pci: bus: 0x{x} device: 0x{x} type: 0x{x} class: 0x{x} subclass: 0x{x} vendorid: 0x{xn}", bus, header->header_type, header->class_code, header->subclass, header->vendor_id);
 
     return;
+}
+
+void check_bus(uint64_t bus){
+
+    for(uint64_t i = 0; i < PCI_BUS_MAX_DEVICES; i++){
+        check_device(bus, i);
+    }
+
+}
+
+uint64_t get_header(uint64_t bus, uint64_t device, uint64_t function){
+    return config_space_base_addr + ((bus * 256) + (device * 8) + function) * PCIE_CONF_SPACE_WIDTH;
 }

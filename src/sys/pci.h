@@ -66,3 +66,7 @@ typedef struct pci_header_1_t {
     uint16_t bridge_control;
 
 }__attribute((packed)) pci_header_1_t;
+
+void check_device(uint64_t bus, uint64_t device);
+
+uint64_t get_header(uint64_t bus, uint64_t device, uint64_t function);

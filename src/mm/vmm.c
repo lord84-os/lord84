@@ -21,6 +21,10 @@ extern uint64_t hhdmoffset;
 uint64_t *kernel_page_map = 0;
 uint64_t kernel_virt = 0;
 
+uint64_t text_start, text_end, rodata_start, rodata_end, data_start, data_end;
+
+uint64_t kernel_start, kernel_end;
+
 void vmm_set_ctx(uint64_t *page_map){
 
     __asm__ volatile (
@@ -52,7 +56,7 @@ void vmm_init(){
         rodata_start_addr, rodata_end_addr,
         data_start_addr, data_end_addr;
 
-    uint64_t text_start = ALIGN_DOWN((uint64_t)text_start_addr, PAGE_SIZE),
+        text_start = ALIGN_DOWN((uint64_t)text_start_addr, PAGE_SIZE),
         rodata_start = ALIGN_DOWN((uint64_t)rodata_start_addr, PAGE_SIZE),
         data_start = ALIGN_DOWN((uint64_t)data_start_addr, PAGE_SIZE),
         text_end = ALIGN_UP((uint64_t)text_end_addr, PAGE_SIZE),
@@ -90,16 +94,27 @@ void vmm_init(){
         uintptr_t phys = text_addr - kernel_address->virtual_base + kernel_address->physical_base;
         vmm_map_page(kernel_page_map, text_addr, phys, PTE_BIT_PRESENT);
     }
+    /* Kernel starts with the text section */
+    kernel_start = text_start;
+
+    kprintf("vmm: text_start: 0x{xn}vmm: text_end: 0x{xn}", text_start, text_end);
 
     for (uintptr_t rodata_addr = rodata_start; rodata_addr < rodata_end; rodata_addr += PAGE_SIZE) {
         uintptr_t phys = rodata_addr - kernel_address->virtual_base + kernel_address->physical_base;
         vmm_map_page(kernel_page_map, rodata_addr, phys, PTE_BIT_PRESENT | PTE_BIT_NX);
     }
 
+    kprintf("vmm: rodata_start: 0x{xn}vmm: rodata_end: 0x{xn}", rodata_start, rodata_end);
+
     for (uintptr_t data_addr = data_start; data_addr < data_end; data_addr += PAGE_SIZE) {
         uintptr_t phys = data_addr - kernel_address->virtual_base + kernel_address->physical_base;
         vmm_map_page(kernel_page_map, data_addr, phys, PTE_BIT_PRESENT | PTE_BIT_RW | PTE_BIT_NX);
     }
+
+    kprintf("vmm: data_start: 0x{xn}vmm: data_end: 0x{xn}", data_start, data_end);
+
+    /* Kernel ends with the data section */
+    kernel_end = data_end;
 
     extern uint64_t lapic_address;
 
@@ -132,7 +147,7 @@ void vmm_init(){
         : : : "rax"
    );
 
-   //kernel_heap_init(); <-- fix, very slow
+   kernel_heap_init(); //<-- fix, very slow
     
 }
 
@@ -242,3 +257,17 @@ void vmm_free_page(uint64_t *page_map, uint64_t virt_addr){
    );
 }
 
+/* Maps `size` number of free pages at the specified virtual address */
+int vmm_map_continous_pages(uint64_t virt_addr, uint64_t size, uint64_t flags){
+    for(uint64_t i = 0; i < size; i++){
+        uint64_t *phys_addr = pmm_alloc();
+
+        if(!phys_addr){
+            return -1;
+        }
+        serial_kprintf("virt_addr: 0x{xn}", virt_addr + i * PAGE_SIZE);
+        vmm_map_page(kernel_page_map, virt_addr + i * PAGE_SIZE, (uint64_t)phys_addr, flags);
+    }
+
+    return 0;
+}

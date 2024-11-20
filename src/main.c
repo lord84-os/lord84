@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <lord84.h>
+#include <string.h>
 #include "../limine/limine.h"
 #include "include/stdio.h"
 #include "flanterm/flanterm.h"
@@ -108,16 +109,6 @@ void _start(void){
     klog(LOG_INFO, "vmm", "Setting up the page tables");
     vmm_init();
     klog(LOG_SUCCESS, "vmm", "Done!");
-    
-/*     kprintf("Allocating 255 bytes of memory: {n}");
-    uint64_t* dick = kmalloc(sizeof(uint64_t));
-    kprintf("Done!: 0x{xn}", dick);
-
-    *dick = 7; */
-
-    extern uint64_t heap_free_page_count;
-
-    kprintf("free: {dn}", heap_free_page_count);
 
     klog(LOG_INFO, "pci", "Getting le pci");
     pci_init();
