@@ -6,7 +6,16 @@
 #include <string.h>
 #include "pmm.h"
 #include "vmm.h"
-#include "kmem.h"
+#include "kmalloc.h"
+
+
+
+
+
+
+/* BAD MALLOC IMPLEMENTATION - you basically cannot free memory from the heap. To be replaced */
+
+
 
 #define KERNEL_HEAP_SIZE    0x100000
 
@@ -77,12 +86,6 @@ void *kmalloc(uint64_t size){
     }
 
     return ret;
-}
-
-void kfree(void *addr){
-
-    /* Determine how many pages this address had allocated */
-    uint64_t size = (uint64_t)addr / (uint64_t)kernel_heap_start;
 }
 
 void heap_free(uint64_t *addr){

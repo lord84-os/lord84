@@ -15,6 +15,7 @@
 
 #define PCI_FUNCTION_MAX            8           // There are always a max of 8 functions per device
 
+
 mcfg_t *mcfg;
 
 uint64_t config_space_base_addr = 0;
@@ -47,17 +48,61 @@ void parse_conf_space(){
 }
 
 void enumerate_conf_space(){
-
-    pci_header_0_t *header = (pci_header_0_t*)config_space_base_addr;
-    uint64_t device_id = 0;
-
     for(uint64_t i = 0; i < end_pci_num; i++){
-        uint64_t header_type = header->header.header_type;
         for(uint64_t j = 0; j < 32; j++){
             check_device(i, j);
         }
     }
+}
 
+/* pci_header_t *find_device(uint64_t class, int subclass)
+
+    - Parameters:
+    class - class code
+    subclass - subclass. if set to -1 then subclass is ignored
+
+    - Return:
+    Returns pointer to the requested PCI header. Returns NULL if not found
+
+    - TODO:
+    Handle returning multiple functions
+
+    */
+
+pci_header_t *find_device(uint64_t class, int subclass){
+    l84_pci_function_return pci_function_return;
+
+    for(uint64_t i = 0; i < end_pci_num; i++){
+        for(uint64_t j = 0; j < 32; j++){
+
+            pci_function_return = check_device(i, j);
+
+            if(pci_function_return.func_addr[0] == 0){
+                continue;
+            }
+
+            /* Get the address of the first function */
+            pci_header_t *header = (pci_header_t*)pci_function_return.func_addr[0];
+
+
+            if(header->class_code == class){
+                
+                /* If no subclass is wanted, then just return the header */
+                if(subclass == -1){
+                    return header;
+                }
+
+                if(subclass == header->subclass){
+                    return header;
+                }
+
+            }
+
+        }
+    }
+
+    /* Found nothing, return null */
+    return NULL;
 }
 
 void pci_init(){
@@ -87,7 +132,9 @@ void pci_init(){
     enumerate_conf_space();
 }
 
-void check_device(uint64_t bus, uint64_t device){
+l84_pci_function_return check_device(uint64_t bus, uint64_t device){
+
+    l84_pci_function_return ret = {0};
 
     pci_header_t *header = (pci_header_t*)get_header(bus, device, 0);
 
@@ -95,30 +142,36 @@ void check_device(uint64_t bus, uint64_t device){
 
     /* If vendor id is 0xffff, that means that this device is unimplemented */
     if(header->vendor_id == 0xffff){
-        return;
+        return (l84_pci_function_return){ 0, {0} };
     }
 
     if((header->header_type & PCI_HEADER_TYPE_MULTI) != 0){
         /* Mask the 7th bit (multi-function bit) so we get the header type */
         uint64_t multi_header_type = header->header_type & 0x3f;
 
+        ret.multi = true;
+
         for(uint64_t function = 0; function < PCI_FUNCTION_MAX; function++){
             uint64_t *addr = (uint64_t*)(config_space_base_addr + ((bus) << 20 | device << 15 | function << 12));
-            pci_header_t *function = (pci_header_t*)((uint64_t)addr);
+            pci_header_t *func = (pci_header_t*)((uint64_t)addr);
 
-            vmm_map_page(kernel_page_map, (uint64_t)function, (uint64_t)function - hhdmoffset, PTE_BIT_PRESENT | PTE_BIT_RW | PTE_BIT_NX);
+            vmm_map_page(kernel_page_map, (uint64_t)func, (uint64_t)func - hhdmoffset, PTE_BIT_PRESENT | PTE_BIT_RW | PTE_BIT_NX);
 
-            if(function->vendor_id != 0xffff){
-                kprintf("pci multi: bus: 0x{x} device: 0x{x} type: 0x{x} class: 0x{x} subclass: 0x{x} vendorid: 0x{xn}", bus, function->device_id, multi_header_type, function->class_code, function->subclass, function->vendor_id);
-                serial_kprintf("pci multi: bus: 0x{x} device: 0x{x} type: 0x{x} class: 0x{x} subclass: 0x{x} vendorid: 0x{xn}", bus, function->device_id, multi_header_type, function->class_code, function->subclass, function->vendor_id);
+            if(func->vendor_id != 0xffff){
+                kprintf("pci multi: bus: 0x{x} device: 0x{x} type: 0x{x} class: 0x{x} subclass: 0x{x} vendorid: 0x{xn}", bus, func->device_id, multi_header_type, func->class_code, func->subclass, func->vendor_id);
+                serial_kprintf("pci multi: bus: 0x{x} device: 0x{x} type: 0x{x} class: 0x{x} subclass: 0x{x} vendorid: 0x{xn}", bus, func->device_id, multi_header_type, func->class_code, func->subclass, func->vendor_id);
+                ret.func_addr[function] = (uint64_t)func;
             }
         }
     }
 
+    ret.multi = false;
+    ret.func_addr[0] = (uint64_t)header;
+
     kprintf("pci: bus: 0x{x} device: 0x{x} type: 0x{x} class: 0x{x} subclass: 0x{x} vendorid: 0x{xn}", bus, header->device_id, header->header_type, header->class_code, header->subclass, header->vendor_id);
     serial_kprintf("pci: bus: 0x{x} device: 0x{x} type: 0x{x} class: 0x{x} subclass: 0x{x} vendorid: 0x{xn}", bus, header->header_type, header->class_code, header->subclass, header->vendor_id);
 
-    return;
+    return ret;
 }
 
 void check_bus(uint64_t bus){

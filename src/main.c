@@ -13,6 +13,7 @@
 #include "hal/smp.h"
 #include "mm/pmm.h"
 #include "mm/vmm.h"
+#include "mm/kmalloc.h"
 #include "sys/acpi.h"
 #include "sys/pci.h"
 #include "drivers/serial.h"
@@ -76,12 +77,14 @@ void _start(void){
 
     kprintf("text_start: 0x{x}\ntext_end: 0x{x}\n", text_start_addr, (uint64_t)text_end_addr);
 
-    /* load the GDT*/
+    klog(LOG_INFO, "serial", "Initalizing serial controller");
+    serial_init();
+    klog(LOG_SUCCESS, "serial", "Done!");
+
     klog(LOG_INFO, "gdt", "Setting up the GDT");
     set_gdt();
     klog(LOG_SUCCESS, "gdt", "Done!");
 
-    /* load the IDT*/
     klog(LOG_INFO, "idt", "Setting up the IDT");
     set_idt();
     klog(LOG_SUCCESS, "idt", "Done!");
@@ -94,10 +97,6 @@ void _start(void){
     apic_init();
     klog(LOG_SUCCESS, "apic", "Done!");
 
-    klog(LOG_INFO, "serial", "Initalizing serial controller");
-    serial_init();
-    klog(LOG_SUCCESS, "serial", "Done!");
-
     klog(LOG_INFO, "smp", "Starting APs");
     smp_init();
     klog(LOG_SUCCESS, "smp", "Done!");
@@ -109,6 +108,8 @@ void _start(void){
     klog(LOG_INFO, "vmm", "Setting up the page tables");
     vmm_init();
     klog(LOG_SUCCESS, "vmm", "Done!");
+
+    kernel_heap_init();
 
     klog(LOG_INFO, "pci", "Getting le pci");
     pci_init();

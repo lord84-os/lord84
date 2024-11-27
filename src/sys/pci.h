@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stdint.h>
 void pci_init();
 
@@ -67,6 +68,13 @@ typedef struct pci_header_1_t {
 
 }__attribute((packed)) pci_header_1_t;
 
-void check_device(uint64_t bus, uint64_t device);
+/* For internal use */
+typedef struct l84_pci_function_return {
+    bool multi; // If device has multiple functions this is set to 1, else set to 0. If set to 0, function2-8 are ignored
+    uint64_t func_addr[8];
+} l84_pci_function_return;
+
+l84_pci_function_return check_device(uint64_t bus, uint64_t device);
 
 uint64_t get_header(uint64_t bus, uint64_t device, uint64_t function);
+

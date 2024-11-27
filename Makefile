@@ -72,7 +72,7 @@ all:
 
 	$(CC) -c src/mm/pmm.c -o $(BUILD_DIR)/pmm.o $(CFLAGS)
 	$(CC) -c src/mm/vmm.c -o $(BUILD_DIR)/vmm.o $(CFLAGS)
-	$(CC) -c src/mm/kmem.c -o $(BUILD_DIR)/kmem.o $(CFLAGS)
+	$(CC) -c src/mm/kmalloc.c -o $(BUILD_DIR)/kmalloc.o $(CFLAGS)
 
 	$(CC) -c src/sys/acpi.c -o $(BUILD_DIR)/acpi.o $(CFLAGS)
 	$(CC) -c src/sys/pci.c -o $(BUILD_DIR)/pci.o $(CFLAGS)

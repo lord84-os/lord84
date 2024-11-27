@@ -5,7 +5,6 @@
 #include <limine.h>
 #include "pmm.h"
 #include "vmm.h"
-#include "kmem.h"
 #include "../sys/acpi.h"
 #include "../hal/apic.h"
 
@@ -146,8 +145,6 @@ void vmm_init(){
 	   movq %%rax, %%cr3\n"
         : : : "rax"
    );
-
-   kernel_heap_init(); //<-- fix, very slow
     
 }
 
@@ -265,6 +262,7 @@ int vmm_map_continous_pages(uint64_t virt_addr, uint64_t size, uint64_t flags){
         if(!phys_addr){
             return -1;
         }
+        
         serial_kprintf("virt_addr: 0x{xn}", virt_addr + i * PAGE_SIZE);
         vmm_map_page(kernel_page_map, virt_addr + i * PAGE_SIZE, (uint64_t)phys_addr, flags);
     }
