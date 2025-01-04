@@ -130,6 +130,7 @@ void pci_init(){
     kprintf("Vendor ID: 0x{xn}", header->vendor_id);
 
     enumerate_conf_space();
+
 }
 
 l84_pci_function_return check_device(uint64_t bus, uint64_t device){
