@@ -3,6 +3,7 @@
 #include <lord84.h>
 #include <string.h>
 #include "pmm.h"
+#include "kmalloc.h"
 
 static volatile struct limine_memmap_request memmap_request = {
     .id = LIMINE_MEMMAP_REQUEST,
@@ -89,7 +90,7 @@ void pmm_init(){
                 /* First set the first entry if it isn't set already */
                 if(first_entry == true){
                     first_entry = false;
-                    free_list = (uint64_t*)(entries[i]->base+hhdmoffset);
+                    free_list = (uint64_t*)(entries[i]->base + hhdmoffset);
                     j = 1;
                 }else{
                     j = 0;

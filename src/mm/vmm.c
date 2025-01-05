@@ -229,7 +229,7 @@ void vmm_free_page(uint64_t *page_map, uint64_t virt_addr){
     uint64_t *pd = get_lower_table(pdp, pdp_offset);
 
     if(!pd){
-        klog(LOG_ERROR, __func__, "Failed to allocate PDP");
+        klog(LOG_ERROR, __func__, "Failed to allocate PD");
         kkill();
     }
 
@@ -237,7 +237,7 @@ void vmm_free_page(uint64_t *page_map, uint64_t virt_addr){
     uint64_t *pt = get_lower_table(pd, pd_offset);
 
     if(!pt){
-        klog(LOG_ERROR, __func__, "Failed to allocate PDP");
+        klog(LOG_ERROR, __func__, "Failed to allocate PT");
         kkill();
     }
 
@@ -268,4 +268,27 @@ int vmm_map_continous_pages(uint64_t virt_addr, uint64_t size, uint64_t flags){
     }
 
     return 0;
+}
+
+/* Allocates and maps memory into the kernel address space */
+void *kernel_allocate_memory(uint64_t size, uint64_t flags){
+
+    if(size == 0){
+        return NULL;
+    }
+
+    void *ret = NULL;
+    for(uint64_t i = 0; i < size; i += PAGE_SIZE){
+        ret = pmm_alloc();
+
+        if(!ret){
+            return NULL;
+        }
+
+        vmm_map_page(kernel_page_map, (uint64_t)ret + hhdmoffset, (uint64_t)ret, PTE_BIT_PRESENT | flags);
+    }
+
+
+
+    return (void*)((uint64_t)ret + hhdmoffset);
 }

@@ -111,9 +111,28 @@ void _start(void){
 
     kernel_heap_init();
 
-    klog(LOG_INFO, "pci", "Getting le pci");
+    kprintf("Testing le malloc!\n");
+    int *a = kmalloc(4);
+    *a = 0xffffffff;
+
+    uint64_t *b = kmalloc(1239);
+    *b = 0xffffffffffffffff;
+
+    kprintf("a: {d}\n", *a);
+    kprintf("b: {d}\n", *b);
+
+    kfree(b);
+
+    kprintf("b: {d}\n", *b);
+
+    char *f = kmalloc(64);
+    memcpy(f, "hellow orld!", sizeof("hellow orld!"));
+    kprintf("{s}\n", f);
+    kfree(f);
+
+/*     klog(LOG_INFO, "pci", "Getting le pci");
     pci_init();
-    klog(LOG_SUCCESS, "pci", "Done!");
+    klog(LOG_SUCCESS, "pci", "Done!"); */
 
     death:
     for(;;);
