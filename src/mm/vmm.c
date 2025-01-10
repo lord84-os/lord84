@@ -1,3 +1,4 @@
+#include <lock.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <lord84.h>
@@ -25,12 +26,10 @@ uint64_t text_start, text_end, rodata_start, rodata_end, data_start, data_end;
 uint64_t kernel_start, kernel_end;
 
 void vmm_set_ctx(uint64_t *page_map){
-
     __asm__ volatile (
         "movq %0, %%cr3\n"
         : : "r" ((uint64_t *)((uint64_t)(page_map) - hhdmoffset)) : "memory"
     );
-
 }
 
 
@@ -167,7 +166,7 @@ uint64_t *get_lower_table(uint64_t *page_map, uint64_t offset){
 
     memset((uint64_t*)((uint64_t)ret + hhdmoffset), 0, PAGE_SIZE);
 
-    page_map[offset] = (uint64_t)ret | PTE_BIT_PRESENT | PTE_BIT_RW |  PTE_BIT_US;
+    page_map[offset] = (uint64_t)ret | PTE_BIT_PRESENT | PTE_BIT_RW | PTE_BIT_US;
 
     return (uint64_t*)((uint64_t)ret + hhdmoffset);
 
@@ -191,14 +190,14 @@ void vmm_map_page(uint64_t *page_map, uint64_t virt_addr, uint64_t phys_addr, ui
     uint64_t *pd = get_lower_table(pdp, pdp_offset);
 
     if(!pd){
-        klog(LOG_ERROR, __func__, "Failed to allocate PDP");
+        klog(LOG_ERROR, __func__, "Failed to allocate PD");
         kkill();
     }
 
     uint64_t *pt = get_lower_table(pd, pd_offset);
 
     if(!pt){
-        klog(LOG_ERROR, __func__, "Failed to allocate PDP");
+        klog(LOG_ERROR, __func__, "Failed to allocate PT");
         kkill();
     }
 
@@ -281,6 +280,7 @@ void *kernel_allocate_memory(uint64_t size, uint64_t flags){
     for(uint64_t i = 0; i < size; i += PAGE_SIZE){
         ret = pmm_alloc();
 
+
         if(!ret){
             return NULL;
         }
@@ -291,4 +291,11 @@ void *kernel_allocate_memory(uint64_t size, uint64_t flags){
 
 
     return (void*)((uint64_t)ret + hhdmoffset);
+}
+
+/* Maps pages from phys_addr to phys_addr+size into the kernels address space */
+void kernel_map_pages(void *phys_addr, uint64_t size, uint64_t flags){
+    for(uint64_t i = 0; i < size; i++){
+        vmm_map_page(kernel_page_map, (uint64_t)phys_addr + hhdmoffset + (i * PAGE_SIZE), (uint64_t)phys_addr + (i * PAGE_SIZE), PTE_BIT_PRESENT | flags);
+    }
 }

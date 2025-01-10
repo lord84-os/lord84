@@ -65,8 +65,21 @@ typedef struct pci_header_1_t {
     uint8_t interrupt_line;
     uint8_t interrupt_pin;
     uint16_t bridge_control;
-
 }__attribute((packed)) pci_header_1_t;
+
+typedef struct pci_header_ahci_t {
+    pci_header_t header;
+    uint32_t bar[4];
+    uint32_t ahci_bar;
+    uint16_t subsystem_id;
+    uint16_t subsytem_vendor_id;
+    uint32_t expansion_rom_base;
+    uint8_t capabilities_ptr;
+    uint16_t interrupt_info;
+    uint8_t min_grant;
+    uint8_t max_latency;
+
+}__attribute((packed)) pci_header_ahci_t;
 
 /* For internal use */
 typedef struct l84_pci_function_return {
@@ -77,4 +90,6 @@ typedef struct l84_pci_function_return {
 l84_pci_function_return check_device(uint64_t bus, uint64_t device);
 
 uint64_t get_header(uint64_t bus, uint64_t device, uint64_t function);
+
+pci_header_t *pci_find_device(uint64_t class, int subclass);
 

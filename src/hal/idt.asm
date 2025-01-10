@@ -263,7 +263,6 @@ s_isr69:
     push qword 69
     jmp isr_handler
 
-
 s_isr255:
     
     push qword 0
@@ -309,7 +308,7 @@ s_isr255:
 
 isr_handler:
     pushaq
-    mov rdi, rsp ; put stack as parameter for interrupt_handler
+    mov rdi, rsp ; put stack frame as parameter for interrupt_handler
     call interrupt_handler
     popaq
     add rsp, 16 ; remove vector and error code from the stack

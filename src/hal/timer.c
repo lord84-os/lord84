@@ -1,5 +1,6 @@
 #include "../sys/acpi.h"
 #include "../hal/ioapic.h"
+#include "../hal/apic.h"
 #include "../drivers/pmt.h"
 #include "timer.h"
 #include <stdio.h>
@@ -15,4 +16,9 @@ void timer_init(void){
     }else{
         calibration_timer = PMT;
     }
+}
+
+void sleep(int ms){
+    /* Eventually fix this */
+    apic_sleep(ms);
 }

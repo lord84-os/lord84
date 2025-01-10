@@ -1,9 +1,15 @@
 #include "idt.h"
+#include "error.h"
 #include "timer.h"
 #include <stdio.h>
+#include <lock.h>
 idt_descriptor idt[256] = {0};
 
 idt_register idtr = {sizeof(idt)-1, (uint64_t)(&idt)};
+
+/* Expand if needed */
+#define MAX_IRQ 256
+irq_t irq_list[MAX_IRQ] = {0};
 
 extern void s_isr0();
 extern void s_isr1();
@@ -46,6 +52,47 @@ extern void s_isr255();
 
 extern void s_load_idt();
 
+atomic_flag irq_register_vector_lock = ATOMIC_FLAG_INIT;
+kstatus register_irq_vector(uint8_t vector, void *base, uint8_t flags){
+    acquire_lock(&irq_register_vector_lock);
+
+    if(!irq_list[vector].in_use){
+        free_lock(&irq_register_vector_lock);
+        return STATUS_ERROR;
+    }
+
+    set_idt_descriptor(vector, base, flags);
+
+    irq_list[vector].base = base;
+    irq_list[vector].in_use = true;
+
+    s_load_idt();
+
+    free_lock(&irq_register_vector_lock);
+
+    return STATUS_SUCCESS;
+}
+
+atomic_flag irq_register_lock = ATOMIC_FLAG_INIT;
+int register_irq(void *base, uint8_t flags){
+    acquire_lock(&irq_register_lock);
+
+    for(size_t i = 0; i < MAX_IRQ; i++){
+        if(!irq_list[i].in_use) {
+            set_idt_descriptor(i, base, flags);
+            irq_list[i].base = base;
+            irq_list[i].in_use = true;
+            free_lock(&irq_register_vector_lock);
+            s_load_idt();
+            return i;
+        }
+    }
+
+    free_lock(&irq_register_lock);
+
+    return -1;
+}
+
 void set_idt_descriptor(uint8_t vector, void *base, uint8_t flags){
     idt[vector].offset_low = ((uint64_t)base & 0xffff);
 
@@ -61,6 +108,12 @@ void set_idt_descriptor(uint8_t vector, void *base, uint8_t flags){
 }
 
 void set_idt(void){
+
+    /* Set all the reserved vectors as used */
+    for(size_t i = 0; i < 32; i++){
+        irq_list[i].in_use = true;
+        irq_list[i].base = NULL;
+    }
     
     set_idt_descriptor(0, s_isr0, 0x8E);
     set_idt_descriptor(1, s_isr1, 0x8E);

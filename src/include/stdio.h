@@ -25,7 +25,12 @@ void serial_print_int(uint64_t i);
 void serial_print_hex(uint64_t num);
 void serial_print_bin(uint64_t num);
 
+void kernel_framebuffer_print(char *buffer, size_t n);
+void kernel_serial_print(char *buffer, size_t n);
+
 char toupper(char c);
+char dtoc(int digit);
+
 
 #define ANSI_COLOR_RED     "\x1b[31m"
 #define ANSI_COLOR_GREEN   "\x1b[32m"

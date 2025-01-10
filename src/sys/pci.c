@@ -51,11 +51,12 @@ void enumerate_conf_space(){
     for(uint64_t i = 0; i < end_pci_num; i++){
         for(uint64_t j = 0; j < 32; j++){
             check_device(i, j);
+            serial_kprintf("big i: {d}, small j: {d}\n", i, j);
         }
     }
 }
 
-/* pci_header_t *find_device(uint64_t class, int subclass)
+/* pci_header_t *pci_find_device(uint64_t class, int subclass)
 
     - Parameters:
     class - class code
@@ -69,7 +70,7 @@ void enumerate_conf_space(){
 
     */
 
-pci_header_t *find_device(uint64_t class, int subclass){
+pci_header_t *pci_find_device(uint64_t class, int subclass){
     l84_pci_function_return pci_function_return;
 
     for(uint64_t i = 0; i < end_pci_num; i++){
@@ -118,18 +119,13 @@ void pci_init(){
 
     parse_conf_space();
 
-    extern uint64_t *kernel_page_map;
+    kprintf("1\n");
 
-    /* Map the initial bus */
-    for(uint64_t i = 0; i < end_pci_num; i++){
-        vmm_map_page(kernel_page_map, config_space_base_addr + i * PCIE_CONF_SPACE_WIDTH, config_space_base_addr + i * PCIE_CONF_SPACE_WIDTH - hhdmoffset, PTE_BIT_PRESENT | PTE_BIT_RW | PTE_BIT_NX);
-    }
-    
-
-    pci_header_t *header = (pci_header_t*)config_space_base_addr;
-    kprintf("Vendor ID: 0x{xn}", header->vendor_id);
+    /* Map the config space */
+    kernel_map_pages((uint64_t*)(config_space_base_addr - hhdmoffset), (PCIE_CONF_SPACE_WIDTH * end_pci_num) / PAGE_SIZE, PTE_BIT_RW | PTE_BIT_NX);
 
     enumerate_conf_space();
+
 
 }
 
@@ -159,8 +155,8 @@ l84_pci_function_return check_device(uint64_t bus, uint64_t device){
             vmm_map_page(kernel_page_map, (uint64_t)func, (uint64_t)func - hhdmoffset, PTE_BIT_PRESENT | PTE_BIT_RW | PTE_BIT_NX);
 
             if(func->vendor_id != 0xffff){
-                kprintf("pci multi: bus: 0x{x} device: 0x{x} type: 0x{x} class: 0x{x} subclass: 0x{x} vendorid: 0x{xn}", bus, func->device_id, multi_header_type, func->class_code, func->subclass, func->vendor_id);
-                serial_kprintf("pci multi: bus: 0x{x} device: 0x{x} type: 0x{x} class: 0x{x} subclass: 0x{x} vendorid: 0x{xn}", bus, func->device_id, multi_header_type, func->class_code, func->subclass, func->vendor_id);
+                //kprintf("pci multi: bus: 0x{x} device: 0x{x} type: 0x{x} class: 0x{x} subclass: 0x{x} vendorid: 0x{xn}", bus, func->device_id, multi_header_type, func->class_code, func->subclass, func->vendor_id);
+                //serial_kprintf("pci multi: bus: 0x{x} device: 0x{x} type: 0x{x} class: 0x{x} subclass: 0x{x} vendorid: 0x{xn}", bus, func->device_id, multi_header_type, func->class_code, func->subclass, func->vendor_id);
                 ret.func_addr[function] = (uint64_t)func;
             }
         }
@@ -169,8 +165,8 @@ l84_pci_function_return check_device(uint64_t bus, uint64_t device){
     ret.multi = false;
     ret.func_addr[0] = (uint64_t)header;
 
-    kprintf("pci: bus: 0x{x} device: 0x{x} type: 0x{x} class: 0x{x} subclass: 0x{x} vendorid: 0x{xn}", bus, header->device_id, header->header_type, header->class_code, header->subclass, header->vendor_id);
-    serial_kprintf("pci: bus: 0x{x} device: 0x{x} type: 0x{x} class: 0x{x} subclass: 0x{x} vendorid: 0x{xn}", bus, header->header_type, header->class_code, header->subclass, header->vendor_id);
+    //kprintf("pci: bus: 0x{x} device: 0x{x} type: 0x{x} class: 0x{x} subclass: 0x{x} vendorid: 0x{xn}", bus, header->device_id, header->header_type, header->class_code, header->subclass, header->vendor_id);
+    //serial_kprintf("pci: bus: 0x{x} device: 0x{x} type: 0x{x} class: 0x{x} subclass: 0x{x} vendorid: 0x{xn}", bus, header->header_type, header->class_code, header->subclass, header->vendor_id);
 
     return ret;
 }
@@ -179,6 +175,7 @@ void check_bus(uint64_t bus){
 
     for(uint64_t i = 0; i < PCI_BUS_MAX_DEVICES; i++){
         check_device(bus, i);
+
     }
 
 }

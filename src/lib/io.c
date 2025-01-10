@@ -20,9 +20,6 @@ void wrmsr(uint64_t msr, uint64_t value){
 	);
 }
 
-void write_reg(uintptr_t addr, uint32_t val ){
-    *(volatile uint32_t *)addr = val;
-}
 void outb(uint16_t port, uint8_t val){
     asm volatile ( "outb %0, %1" : : "a"(val), "Nd"(port) : "memory");
 }

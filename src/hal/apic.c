@@ -42,6 +42,7 @@ uint32_t lapic_read_reg(uint32_t reg){
     return(*((uint32_t*)(lapic_address+reg)));
 }
 
+/* Assumes single-threaded*/
 void apic_sleep(uint64_t ms){
     int curcnt = lapic_timer_ticks;
     while (lapic_timer_ticks - curcnt < ms) {

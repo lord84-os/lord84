@@ -5,7 +5,8 @@
 #include "apic.h"
 #include "idt.h"
 #include "../mm/vmm.h"
-#include <spinlock.h>
+#include <lock.h>
+#include <io.h>
 
 static volatile struct limine_smp_request smp_request = {
     .id = LIMINE_SMP_REQUEST,
@@ -15,14 +16,9 @@ static volatile struct limine_smp_request smp_request = {
 extern void s_load_idt();
 extern void s_load_gdt();
 
+
+
 void ap_init(struct limine_smp_info *smp_info){
-
-    /* If we are the BSP processor, skip initialization */
-    if(smp_info->lapic_id == 0){
-        return;
-    }
-    asm("cli");
-
 
     /* Load the GDT */
     s_load_gdt();
@@ -30,24 +26,38 @@ void ap_init(struct limine_smp_info *smp_info){
     /* Load the IDT */
     s_load_idt();
 
-    //atomic_flag *lock = NULL;
-    //acquire_lock(lock);
-    //kprintf("Hi from processor {dn}", smp_info->processor_id);
-    //release_lock(lock);
-
-    for(;;){
-        asm("hlt");
-    }
+    kprintf("Hello from processor {d}\n", smp_info->lapic_id);
+    kprintf("1 PAT: 0x{xn}", rdmsr(0x277));
+    serial_kprintf("1 PAT: 0x{xn}", rdmsr(0x277));
 
     /* Set the CR3 context */
     extern uint64_t *kernel_page_map;
 
     vmm_set_ctx(kernel_page_map);
 
+    for(;;){
+        asm("cli");
+        asm("hlt");
+    }
+
+    asm volatile(
+        "movq %%cr3, %%rax\n\
+	   movq %%rax, %%cr3\n"
+        : : : "rax"
+   );
+
+
+
+
+
+
+
+
     /* Load the APIC */
     apic_init();
 
     for(;;){
+        asm("cli");
         asm("hlt");
     }
 }
@@ -65,6 +75,10 @@ void smp_init(){
 
     for(uint64_t i = 0; i < smp_response->cpu_count; i++){
         /* Pointer to smp_info is passed in RDI by Limine, so no need to pass any arguments here */
+        if(smp_response->cpus[i]->lapic_id == 0){
+            kprintf("0 PAT: 0x{xn}", rdmsr(0x277));
+            serial_kprintf("0 PAT: 0x{xn}", rdmsr(0x277));
+        }
         smp_response->cpus[i]->goto_address = &ap_init;
     }
 

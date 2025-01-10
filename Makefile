@@ -57,6 +57,7 @@ all:
 	$(CC) -c src/lib/string.c -o $(BUILD_DIR)/string.o $(CFLAGS)
 	$(CC) -c src/lib/stdio.c -o $(BUILD_DIR)/stdio.o $(CFLAGS)
 	$(CC) -c src/lib/io.c -o $(BUILD_DIR)/io.o $(CFLAGS)
+	$(CC) -c src/lib/spinlock.c -o $(BUILD_DIR)/spinlock.o $(CFLAGS)
 
 	$(CC) -c src/hal/gdt.c -o $(BUILD_DIR)/gdt.o $(CFLAGS)
 	$(AS) 	 src/hal/gdt.asm -o $(BUILD_DIR)/gdt_asm.o $(NASMFLAGS)
@@ -79,6 +80,7 @@ all:
 
 	$(CC) -c src/drivers/serial.c -o $(BUILD_DIR)/serial.o $(CFLAGS)
 	$(CC) -c src/drivers/pmt.c -o $(BUILD_DIR)/pmt.o $(CFLAGS)
+	$(CC) -c src/drivers/ahci.c -o $(BUILD_DIR)/ahci.o $(CFLAGS)
 
 
 

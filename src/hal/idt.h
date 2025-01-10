@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stdint.h>
 
 typedef struct idt_descriptor {
@@ -20,5 +21,12 @@ typedef struct interrupt_frame {
 	uint64_t int_no, err;
 	uint64_t cs, rip, rsp, ss, rflags;
 } __attribute((packed)) interrupt_frame;
+
+typedef struct irq_t {
+    void *base;
+    bool in_use;
+}irq_t;
+
+void set_idt_descriptor(uint8_t vector, void *base, uint8_t flags);
 
 void set_idt(void);

@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <stddef.h>
+#include <stdio.h>
 
 void *memset(void *dest, int c, uint64_t n){
     uint8_t *p = (uint8_t *)dest;
@@ -62,5 +63,20 @@ uint64_t strlen(const char* str){
     }
 
     return i;
+}
+
+/* Converts a digit to a character */
+char dtoc(int digit){
+    if(digit > 15){
+        return 0;
+    }else if(digit == 0){
+        return '0';
+    }
+
+    if(digit < 10){
+        return '0' + digit;
+    }else{
+        return 'A' + digit - 10;
+    }
 }
 

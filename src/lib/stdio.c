@@ -2,6 +2,7 @@
 #include <stdarg.h>
 #include <stdbool.h>
 #include <string.h>
+#include <lock.h>
 #include "../flanterm/flanterm.h"
 #include "../include/stdio.h"
 #include "../drivers/serial.h"
@@ -54,6 +55,8 @@ void klog(int level, const char *func, const char *msg){
 }
 
 
+atomic_flag printf_lock = ATOMIC_FLAG_INIT;
+
 /* 
     printf()
     params:
@@ -70,11 +73,9 @@ void klog(int level, const char *func, const char *msg){
         {b}      - binary
  */
 
-
-
 int kprintf(const char *format_string, ...){
-
     extern struct flanterm_context *ft_ctx;
+    acquire_lock(&printf_lock);
     int state = NORMAL;
     va_list a_list;
     va_start(a_list, format_string);
@@ -87,7 +88,7 @@ int kprintf(const char *format_string, ...){
                         state = FORMAT_SPECIFIER;
                         break;
                     default:
-                        print_char(ft_ctx, current); // FAIL
+                        print_char(ft_ctx, current);
                         break;                     
                 }
                 break;
@@ -137,8 +138,7 @@ int kprintf(const char *format_string, ...){
     }
 
     va_end(a_list);
-
-
+    free_lock(&printf_lock);
     return 0;
 }
 
@@ -214,7 +214,7 @@ int serial_kprintf(const char *format_string, ...){
 #define MAX_INTERGER_SIZE 128
 
 void print_char(struct flanterm_context *ft_ctx, char c){
-    flanterm_write(ft_ctx, &c, 1);
+    kernel_framebuffer_print(&c, 1);
 }
 
 void serial_print_char(char c){
@@ -222,357 +222,165 @@ void serial_print_char(char c){
 }
 
 void print_str(struct flanterm_context *ft_ctx, char *str){
-    flanterm_write(ft_ctx, str, strlen(str));
+    kernel_framebuffer_print(str, strlen(str));
 }
 
 void print_int(struct flanterm_context *ft_ctx, uint64_t num){
-    int arr[MAX_INTERGER_SIZE];
+    char buffer[MAX_INTERGER_SIZE] = {0};
+
+    if(num == 0){
+        buffer[0] = '0';
+    }
+
+    int arr[MAX_INTERGER_SIZE] = {0};
     int j = 0;
-    int digitscount = 0;
 
     while(num != 0){
         int mod = num % 10;
-        arr[j] = mod;
+        arr[j] = dtoc(mod);
         num /= 10;
         j++;
 
-        if(j == MAX_INTERGER_SIZE){            // ub handling like any good programmer
-                return;
+        if(j == MAX_INTERGER_SIZE){
+            return;
         }
+    }
 
-        digitscount = j;
-        if(num == 0){
-                arr[j] = mod;
-        }
+    /* Reverse buffer */
+    for(int i = 0; i < j; i++){
+        buffer[i] = arr[j - i - 1];
     }
-    for(int i = digitscount-1; i != -1; i--){
-        switch(arr[i]){
-                case 1:
-                        print_char(ft_ctx, '1');
-                        break;
-                case 2:
-                        print_char(ft_ctx, '2');
-                        break;
-                case 3:
-                        print_char(ft_ctx, '3');
-                        break;
-                case 4:
-                        print_char(ft_ctx, '4');
-                        break;
-                case 5:
-                        print_char(ft_ctx, '5');
-                        break;
-                case 6:
-                        print_char(ft_ctx, '6');
-                        break;
-                case 7:
-                        print_char(ft_ctx, '7');
-                        break;
-                case 8:
-                        print_char(ft_ctx, '8');
-                        break;
-                case 9:
-                        print_char(ft_ctx, '9');
-                        break;
-                case 0:
-                        print_char(ft_ctx, '0');
-                        break;
-        }
-                
-    }
-    if(digitscount == 0){
-        print_char(ft_ctx, '0');
-    }
+    
+    kernel_framebuffer_print(buffer, strlen(buffer));
 }
 
 void print_hex(struct flanterm_context *ft_ctx, uint64_t num){
-    int arr[MAX_INTERGER_SIZE];
+    char buffer[MAX_INTERGER_SIZE] = {0};
+
+    if(num == 0){
+        buffer[0] = '0';
+    }
+
+    int arr[MAX_INTERGER_SIZE] = {0};
     int j = 0;
-    int digitscount = 0;
 
     while(num != 0){
         int mod = num % 16;
-        arr[j] = mod;
+        arr[j] = dtoc(mod);
         num /= 16;
         j++;
 
-        if(j == MAX_INTERGER_SIZE){            // ub handling like any good programmer
-                return;
+        if(j == MAX_INTERGER_SIZE){
+            return;
         }
+    }
 
-        digitscount = j;
-        if(num == 0){
-                arr[j] = mod;
-        }
+    /* Reverse buffer */
+    for(int i = 0; i < j; i++){
+        buffer[i] = arr[j - i - 1];
     }
-    for(int i = digitscount-1; i != -1; i--){
-        switch(arr[i]){
-                case 1:
-                        print_char(ft_ctx, '1');
-                        break;
-                case 2:
-                        print_char(ft_ctx, '2');
-                        break;
-                case 3:
-                        print_char(ft_ctx, '3');
-                        break;
-                case 4:
-                        print_char(ft_ctx, '4');
-                        break;
-                case 5:
-                        print_char(ft_ctx, '5');
-                        break;
-                case 6:
-                        print_char(ft_ctx, '6');
-                        break;
-                case 7:
-                        print_char(ft_ctx, '7');
-                        break;
-                case 8:
-                        print_char(ft_ctx, '8');
-                        break;
-                case 9:
-                        print_char(ft_ctx, '9');
-                        break;
-                case 10:
-                        print_char(ft_ctx, 'A');
-                        break;
-                case 11:
-                        print_char(ft_ctx, 'B');
-                        break;
-                case 12:
-                        print_char(ft_ctx, 'C');
-                        break;
-                case 13:
-                        print_char(ft_ctx, 'D');
-                        break;
-                case 14:
-                        print_char(ft_ctx, 'E');
-                        break;
-                case 15:
-                        print_char(ft_ctx, 'F');
-                        break;
-                case 0:
-                        print_char(ft_ctx, '0');
-                        break;
-        }
-                
-    }
-    if(digitscount == 0){
-        print_char(ft_ctx, '0');
-    }
+
+    kernel_framebuffer_print(buffer, strlen(buffer));
 }
 
 void print_bin(struct flanterm_context *ft_ctx, uint64_t num){
-    int arr[MAX_INTERGER_SIZE];
+    char buffer[MAX_INTERGER_SIZE] = {0};
+
+    int arr[MAX_INTERGER_SIZE] = {0};
     int j = 0;
-    int digitscount = 0;
 
     while(num != 0){
         int mod = num % 2;
-        arr[j] = mod;
+        arr[j] = dtoc(mod);
         num /= 2;
         j++;
 
-        if(j == MAX_INTERGER_SIZE){            // ub handling like any good programmer
-                return;
+        if(j == MAX_INTERGER_SIZE){
+            return;
         }
+    }
 
-        digitscount = j;
+    /* Reverse buffer */
+    for(int i = 0; i < j; i++){
+        buffer[i] = arr[j - i - 1];
+    }
 
-        if(num == 0){
-                arr[j] = mod;
-        }
-    }
-    for(int i = digitscount-1; i != -1; i--){
-        switch(arr[i]){
-                case 1:
-                        print_char(ft_ctx, '1');
-                        break;
-                case 0:
-                        print_char(ft_ctx, '0');
-                        break;               
-        }
-                
-    }
-    if(digitscount == 0){
-        print_char(ft_ctx, '0');
-    }
+    kernel_framebuffer_print(buffer, strlen(buffer));
 }
 
 void serial_print_int(uint64_t num){
-    int arr[MAX_INTERGER_SIZE];
+    char buffer[MAX_INTERGER_SIZE] = {0};
+
+    int arr[MAX_INTERGER_SIZE] = {0};
     int j = 0;
-    int digitscount = 0;
 
     while(num != 0){
         int mod = num % 10;
-        arr[j] = mod;
+        arr[j] = dtoc(mod);
         num /= 10;
         j++;
 
-        if(j == MAX_INTERGER_SIZE){            // ub handling like any good programmer
-                return;
+        if(j == MAX_INTERGER_SIZE){
+            return;
         }
+    }
 
-        digitscount = j;
-        if(num == 0){
-                arr[j] = mod;
-        }
+    /* Reverse buffer */
+    for(int i = 0; i < j; i++){
+        buffer[i] = arr[j - i - 1];
     }
-    for(int i = digitscount-1; i != -1; i--){
-        switch(arr[i]){
-                case 1:
-                        serial_print_char('1');
-                        break;
-                case 2:
-                        serial_print_char('2');
-                        break;
-                case 3:
-                        serial_print_char('3');
-                        break;
-                case 4:
-                        serial_print_char('4');
-                        break;
-                case 5:
-                        serial_print_char('5');
-                        break;
-                case 6:
-                        serial_print_char('6');
-                        break;
-                case 7:
-                        serial_print_char('7');
-                        break;
-                case 8:
-                        serial_print_char('8');
-                        break;
-                case 9:
-                        serial_print_char('9');
-                        break;
-                case 0:
-                        serial_print_char('0');
-                        break;
-        }
-                
-    }
-    if(digitscount == 0){
-        serial_print_char('0');
-    }
+
+    kernel_serial_print(buffer, strlen(buffer));
 }
 
 void serial_print_hex(uint64_t num){
-    int arr[MAX_INTERGER_SIZE];
+    char buffer[MAX_INTERGER_SIZE] = {0};
+
+    int arr[MAX_INTERGER_SIZE] = {0};
     int j = 0;
-    int digitscount = 0;
 
     while(num != 0){
         int mod = num % 16;
-        arr[j] = mod;
+        arr[j] = dtoc(mod);
         num /= 16;
         j++;
 
-        if(j == MAX_INTERGER_SIZE){            // ub handling like any good programmer
-                return;
+        if(j == MAX_INTERGER_SIZE){
+            return;
         }
+    }
 
-        digitscount = j;
-        if(num == 0){
-                arr[j] = mod;
-        }
+    /* Reverse buffer */
+    for(int i = 0; i < j; i++){
+        buffer[i] = arr[j - i - 1];
     }
-    for(int i = digitscount-1; i != -1; i--){
-        switch(arr[i]){
-                case 1:
-                        serial_print_char('1');
-                        break;
-                case 2:
-                        serial_print_char('2');
-                        break;
-                case 3:
-                        serial_print_char('3');
-                        break;
-                case 4:
-                        serial_print_char('4');
-                        break;
-                case 5:
-                        serial_print_char('5');
-                        break;
-                case 6:
-                        serial_print_char('6');
-                        break;
-                case 7:
-                        serial_print_char('7');
-                        break;
-                case 8:
-                        serial_print_char('8');
-                        break;
-                case 9:
-                        serial_print_char('9');
-                        break;
-                case 10:
-                        serial_print_char('A');
-                        break;
-                case 11:
-                        serial_print_char('B');
-                        break;
-                case 12:
-                        serial_print_char('C');
-                        break;
-                case 13:
-                        serial_print_char('D');
-                        break;
-                case 14:
-                        serial_print_char('E');
-                        break;
-                case 15:
-                        serial_print_char('F');
-                        break;
-                case 0:
-                        serial_print_char('0');
-                        break;
-        }
-                
-    }
-    if(digitscount == 0){
-        serial_print_char('0');
-    }
+
+    kernel_serial_print(buffer, strlen(buffer));
 }
 
 void serial_print_bin(uint64_t num){
-    int arr[MAX_INTERGER_SIZE];
+    char buffer[MAX_INTERGER_SIZE] = {0};
+
+    int arr[MAX_INTERGER_SIZE] = {0};
     int j = 0;
-    int digitscount = 0;
 
     while(num != 0){
         int mod = num % 2;
-        arr[j] = mod;
+        arr[j] = dtoc(mod);
         num /= 2;
         j++;
 
-        if(j == MAX_INTERGER_SIZE){            // ub handling like any good programmer
-                return;
+        if(j == MAX_INTERGER_SIZE){
+            return;
         }
+    }
 
-        digitscount = j;
+    /* Reverse buffer */
+    for(int i = 0; i < j; i++){
+        buffer[i] = arr[j - i - 1];
+    }
 
-        if(num == 0){
-                arr[j] = mod;
-        }
-    }
-    for(int i = digitscount-1; i != -1; i--){
-        switch(arr[i]){
-                case 1:
-                        serial_print_char('1');
-                        break;
-                case 0:
-                        serial_print_char('0');
-                        break;               
-        }
-                
-    }
-    if(digitscount == 0){
-        serial_print_char('0');
-    }
+    kernel_serial_print(buffer, strlen(buffer));
 }
 
 
@@ -631,6 +439,30 @@ char toupper(char c){
                 default:
                         return c;
 
-        }
-                
+        }   
+}
+
+
+atomic_flag fb_spinlock = ATOMIC_FLAG_INIT;
+
+/* Eventually fix printf so that these print_* functions dont
+   write to the framebuffer but instead return to printf */
+
+/* Prints a char array to the framebuffer, thread safe*/
+void kernel_framebuffer_print(char *buffer, size_t n){
+    extern struct flanterm_context *ft_ctx;
+    //acquire_lock(&fb_spinlock);
+    flanterm_write(ft_ctx, buffer, n);
+    //free_lock(&fb_spinlock);
+}
+
+atomic_flag serial_spinlock = ATOMIC_FLAG_INIT;
+
+/* Prints a char array to serial, thread safe*/
+void kernel_serial_print(char *buffer, size_t n){
+    //acquire_lock(&serial_spinlock);
+    for(size_t i = 0; i < n; i++){
+        serial_print_char(buffer[i]);
+    }
+    //free_lock(&serial_spinlock);
 }
