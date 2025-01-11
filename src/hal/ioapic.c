@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <lord84.h>
 #include "../sys/acpi.h"
+#include "error.h"
 
 #define IOREGSEL    0x0
 #define IOWIN       0x10
@@ -35,9 +36,15 @@ uint32_t ioapic_read_reg(uint8_t reg){
 void write_redir_entry(uint8_t reg, uint64_t data){
     /* First write lower 32-bits of the data to the specified IOREDTBL register */
     ioapic_write_reg(IOREDTBL(reg), (uint32_t)(data & 0xFFFFFFFF));
-    kprintf("writing {d} to {dn}", data, reg);
+
     /* Then write the upper 32-bits */
     ioapic_write_reg(IOREDTBL(reg)+1, (uint32_t)(data >> 32));
+}
+
+kstatus set_redir_entry(uint8_t pin, uint8_t vector, uint8_t delivery, uint8_t trigger, uint8_t destination_field, uint8_t destination_mode){
+    uint64_t data = ((uint64_t)destination_field << 56) | (uint64_t)trigger << 15 | (uint64_t)destination_mode << 11 | (uint64_t)delivery << 8 | vector;
+    write_redir_entry(pin, data);
+    return KERNEL_STATUS_SUCCESS;
 }
 
 

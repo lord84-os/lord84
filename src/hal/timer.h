@@ -8,3 +8,4 @@ enum USABLE_TIMERS {
 
 void timer_init(void);
 void apic_timer_handler(void);
+void sleep(int ms);

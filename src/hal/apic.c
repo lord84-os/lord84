@@ -2,6 +2,7 @@
 #include "../drivers/pmt.h"
 #include "timer.h"
 #include "ioapic.h"
+#include <lock.h>
 #include <stdio.h>
 #include <lord84.h>
 #include <cpuid.h> // GCC specific
@@ -50,7 +51,9 @@ void apic_sleep(uint64_t ms){
     }
 }
 
+atomic_flag lapic_timer_flag = ATOMIC_FLAG_INIT;
 void lapic_timer_init(){
+    acquire_lock(&lapic_timer_flag);
     /* Stop the APIC timer */
     lapic_write_reg(LAPIC_TIMER_INITIAL_CNT_REG, 0);
 
@@ -77,6 +80,8 @@ void lapic_timer_init(){
 
     /* Set the inital count to the calibration */
     lapic_write_reg(LAPIC_TIMER_INITIAL_CNT_REG, calibration);
+
+    free_lock(&lapic_timer_flag);
 
 }
 
@@ -109,6 +114,16 @@ void apic_init(void){
     lapic_timer_init();
     
     asm("sti");
+}
+
+void ap_apic_init(){
+    /* Enable the lapic and set the spurious interrupt vector to 0xFF */
+    lapic_write_reg(LAPIC_SPURIOUS_REG, 0x1FF);
+
+    /* Start the APIC timer */
+    lapic_timer_init();
+
+    asm("cli");
 }
 
 void apic_timer_handler(){

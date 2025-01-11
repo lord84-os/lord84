@@ -16,8 +16,6 @@ static volatile struct limine_smp_request smp_request = {
 extern void s_load_idt();
 extern void s_load_gdt();
 
-
-
 void ap_init(struct limine_smp_info *smp_info){
 
     /* Load the GDT */
@@ -26,19 +24,10 @@ void ap_init(struct limine_smp_info *smp_info){
     /* Load the IDT */
     s_load_idt();
 
-    kprintf("Hello from processor {d}\n", smp_info->lapic_id);
-    kprintf("1 PAT: 0x{xn}", rdmsr(0x277));
-    serial_kprintf("1 PAT: 0x{xn}", rdmsr(0x277));
-
     /* Set the CR3 context */
     extern uint64_t *kernel_page_map;
 
     vmm_set_ctx(kernel_page_map);
-
-    for(;;){
-        asm("cli");
-        asm("hlt");
-    }
 
     asm volatile(
         "movq %%cr3, %%rax\n\
@@ -46,15 +35,10 @@ void ap_init(struct limine_smp_info *smp_info){
         : : : "rax"
    );
 
+    /* Initialize APIC & APIC timer */
+    ap_apic_init();
 
-
-
-
-
-
-
-    /* Load the APIC */
-    apic_init();
+    kprintf("smp: initialized CPU {d}\n", smp_info->lapic_id);
 
     for(;;){
         asm("cli");
@@ -75,11 +59,13 @@ void smp_init(){
 
     for(uint64_t i = 0; i < smp_response->cpu_count; i++){
         /* Pointer to smp_info is passed in RDI by Limine, so no need to pass any arguments here */
-        if(smp_response->cpus[i]->lapic_id == 0){
-            kprintf("0 PAT: 0x{xn}", rdmsr(0x277));
-            serial_kprintf("0 PAT: 0x{xn}", rdmsr(0x277));
-        }
         smp_response->cpus[i]->goto_address = &ap_init;
+    }
+
+    /* If one of the APs has halted, then halt the BSP */
+    extern bool kernel_killed;
+    if(kernel_killed == true){
+        kkill();
     }
 
 }

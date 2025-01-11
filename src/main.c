@@ -72,13 +72,9 @@ void _start(void){
             0
     );
 
-    print_int(ft_ctx, 1012323);
-
     kprintf("Welcome to lord84{n}");
 
     extern link_symbol_ptr text_start_addr, text_end_addr;
-
-    kprintf("text_start: 0x{x}\ntext_end: 0x{x}\n", text_start_addr, (uint64_t)text_end_addr);
 
     klog(LOG_INFO, "serial", "Initalizing serial controller");
     serial_init();
@@ -90,7 +86,7 @@ void _start(void){
 
     klog(LOG_INFO, "idt", "Setting up the IDT");
     set_idt();
-    klog(LOG_SUCCESS, "idt", "Done!");
+    klog(LOG_SUCCESS, "idt", "Done!");;
 
     klog(LOG_INFO, "acpi", "Reading ACPI tables");
     acpi_init();
@@ -99,11 +95,6 @@ void _start(void){
     klog(LOG_INFO, "apic", "Initalizing APIC");
     apic_init();
     klog(LOG_SUCCESS, "apic", "Done!");
-
-    klog(LOG_INFO, "smp", "Starting APs");
-    smp_init();
-
-    klog(LOG_SUCCESS, "smp", "Done!");
 
     klog(LOG_INFO, "pmm", "Setting up the PMM");
     pmm_init();
@@ -114,6 +105,10 @@ void _start(void){
     klog(LOG_SUCCESS, "vmm", "Done!");
 
     kernel_heap_init();
+
+    klog(LOG_INFO, "smp", "Starting APs");
+    smp_init();
+    klog(LOG_SUCCESS, "smp", "Done!");
 
     klog(LOG_INFO, "pci", "Getting le pci");
     pci_init();
@@ -129,7 +124,9 @@ void _start(void){
     for(;;);
 }
 
+bool kernel_killed = false;
 void kkill(void){
+    kernel_killed = true;
     asm volatile("cli; hlt");
     for(;;);
 }

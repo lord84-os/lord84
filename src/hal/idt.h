@@ -1,3 +1,4 @@
+#include "error.h"
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -18,8 +19,8 @@ typedef struct idt_register {
 
 typedef struct interrupt_frame {
 	uint64_t r15, r14, r13, r12, r11, r10, r9, r8, rdi, rsi, rbp, rdx, rcx, rbx, rax;
-	uint64_t int_no, err;
-	uint64_t cs, rip, rsp, ss, rflags;
+    uint64_t int_no, err;
+	uint64_t rip, cs, rflags, rsp, ss;
 } __attribute((packed)) interrupt_frame;
 
 typedef struct irq_t {
@@ -28,5 +29,9 @@ typedef struct irq_t {
 }irq_t;
 
 void set_idt_descriptor(uint8_t vector, void *base, uint8_t flags);
+
+kstatus register_irq_vector(uint8_t vector, void *base, uint8_t flags);
+
+int register_irq(void *base, uint8_t flags);
 
 void set_idt(void);

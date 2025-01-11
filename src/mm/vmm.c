@@ -28,7 +28,7 @@ uint64_t kernel_start, kernel_end;
 void vmm_set_ctx(uint64_t *page_map){
     __asm__ volatile (
         "movq %0, %%cr3\n"
-        : : "r" ((uint64_t *)((uint64_t)(page_map) - hhdmoffset)) : "memory"
+        : : "r" ((uint64_t)((uint64_t)(page_map) - hhdmoffset)) : "memory"
     );
 }
 

@@ -3,12 +3,15 @@
 #include "timer.h"
 #include <stdio.h>
 #include <lock.h>
+#include <lord84.h>
 idt_descriptor idt[256] = {0};
 
 idt_register idtr = {sizeof(idt)-1, (uint64_t)(&idt)};
 
 /* Expand if needed */
 #define MAX_IRQ 256
+
+/* IRQ structure list, eventually restructure to support IRQs on multiple cores */
 irq_t irq_list[MAX_IRQ] = {0};
 
 extern void s_isr0();
@@ -52,13 +55,15 @@ extern void s_isr255();
 
 extern void s_load_idt();
 
-atomic_flag irq_register_vector_lock = ATOMIC_FLAG_INIT;
+atomic_flag irq_register_lock = ATOMIC_FLAG_INIT;
+
+/* Registers an IRQ with the specified vector. */
 kstatus register_irq_vector(uint8_t vector, void *base, uint8_t flags){
-    acquire_lock(&irq_register_vector_lock);
+    acquire_lock(&irq_register_lock);
 
     if(!irq_list[vector].in_use){
-        free_lock(&irq_register_vector_lock);
-        return STATUS_ERROR;
+        free_lock(&irq_register_lock);
+        return KERNEL_STATUS_ERROR;
     }
 
     set_idt_descriptor(vector, base, flags);
@@ -68,12 +73,12 @@ kstatus register_irq_vector(uint8_t vector, void *base, uint8_t flags){
 
     s_load_idt();
 
-    free_lock(&irq_register_vector_lock);
+    free_lock(&irq_register_lock);
 
-    return STATUS_SUCCESS;
+    return KERNEL_STATUS_SUCCESS;
 }
 
-atomic_flag irq_register_lock = ATOMIC_FLAG_INIT;
+/* Registers an IRQ and returns the vector */
 int register_irq(void *base, uint8_t flags){
     acquire_lock(&irq_register_lock);
 
@@ -82,7 +87,7 @@ int register_irq(void *base, uint8_t flags){
             set_idt_descriptor(i, base, flags);
             irq_list[i].base = base;
             irq_list[i].in_use = true;
-            free_lock(&irq_register_vector_lock);
+            free_lock(&irq_register_lock);
             s_load_idt();
             return i;
         }
@@ -202,7 +207,7 @@ void interrupt_handler(interrupt_frame *r){
         kprintf("rdi 0x{x} | rsi 0x{x} | rbp 0x{xn}", r->rdi, r->rsi, r->rbp);
         kprintf("r8 0x{x} | r9 0x{x} | r10 0x{x} | r11 0x{x} | r12 0x{x} | r13 0x{x} | r14 0x{x} | r15 0x{xn}", r->r8, r->r9, r->r10, r->r11, r->r12, r->r13, r->r14, r->r15);
         kprintf("rip 0x{x} | cs 0x{x} | ss 0x{x} | rsp 0x{x} | rflags 0x{xn}", r->rip, r->cs, r->ss, r->rsp, r->rflags);
-        asm("cli; hlt");
+        kkill();
         for(;;);
     }
 

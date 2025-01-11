@@ -1,8 +1,10 @@
 
 #include <lord84.h>
 #include <stdio.h>
+#include "../hal/apic.h"
 #include "../sys/pci.h"
 #include "../mm/vmm.h"
+#include "../hal/idt.h" 
 
 #define AHCI_MSE            0x02
 #define AHCI_BME            0x03
@@ -32,7 +34,7 @@ void ahci_init(){
     pci_header_0_t *header = (pci_header_0_t *)pci_find_device(AHCI_CLASS_ID, AHCI_SUBCLASS_ID);
 
     if(!header){
-        klog(LOG_ERROR, __func__, "AHCI Controller not found!");
+        klog(LOG_ERROR, __func__, "AHCI controller not found!");
         kkill();
     }
 
@@ -53,7 +55,21 @@ void ahci_init(){
     ahci_base_address += hhdmoffset;
 
     /* BIOS/OS Handoff */
+    kprintf("ahci: Performing BIOS/OS handoff\n");
     ahci_write_reg(AHCI_BOHC_REG, ahci_read_reg(AHCI_BOHC_REG) | 0x2); // Set the OS Owned Semaphore bit - OS now owns the HBA
 
+    uint32_t bohc = ahci_read_reg(AHCI_BOHC_REG);
+
+    /* Wait for the handoff to complete*/
+    while((bohc & 0b01) != 1 && (bohc & 0b1) != 0){
+        apic_sleep(200);
+        bohc = ahci_read_reg(AHCI_BOHC_REG);
+    }
+
+    /* Reset the controller */
+    ahci_write_reg(AHCI_GHC_REG, 1);
+
+    /* Set the IRQ and enable interrupts */
+    kprintf("ahci: Requesting pin {d}\n", header->interrupt_pin);
 
 }

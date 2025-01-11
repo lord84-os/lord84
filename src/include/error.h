@@ -3,10 +3,10 @@
 
 typedef enum {
     /* Success */
-    STATUS_SUCCESS,
+    KERNEL_STATUS_SUCCESS,
 
     /* General error */
-    STATUS_ERROR,
+    KERNEL_STATUS_ERROR,
 } kstatus;
 
 

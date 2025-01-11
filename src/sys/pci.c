@@ -111,15 +111,13 @@ void pci_init(){
 
     if(!mcfg){
         klog(LOG_ERROR, __func__, "Failed to find MCFG table");
-        kprintf("pci: device: {d} PCIe not supported! Halting");
+        kprintf("pci: device: PCIe not supported! Halting");
         kkill();
     }
 
     mcfg = (mcfg_t*)((uint64_t)mcfg + hhdmoffset);
 
     parse_conf_space();
-
-    kprintf("1\n");
 
     /* Map the config space */
     kernel_map_pages((uint64_t*)(config_space_base_addr - hhdmoffset), (PCIE_CONF_SPACE_WIDTH * end_pci_num) / PAGE_SIZE, PTE_BIT_RW | PTE_BIT_NX);
@@ -155,8 +153,8 @@ l84_pci_function_return check_device(uint64_t bus, uint64_t device){
             vmm_map_page(kernel_page_map, (uint64_t)func, (uint64_t)func - hhdmoffset, PTE_BIT_PRESENT | PTE_BIT_RW | PTE_BIT_NX);
 
             if(func->vendor_id != 0xffff){
-                //kprintf("pci multi: bus: 0x{x} device: 0x{x} type: 0x{x} class: 0x{x} subclass: 0x{x} vendorid: 0x{xn}", bus, func->device_id, multi_header_type, func->class_code, func->subclass, func->vendor_id);
-                //serial_kprintf("pci multi: bus: 0x{x} device: 0x{x} type: 0x{x} class: 0x{x} subclass: 0x{x} vendorid: 0x{xn}", bus, func->device_id, multi_header_type, func->class_code, func->subclass, func->vendor_id);
+                kprintf("pci multi: bus: 0x{x} device: 0x{x} type: 0x{x} class: 0x{x} subclass: 0x{x} vendorid: 0x{xn}", bus, func->device_id, multi_header_type, func->class_code, func->subclass, func->vendor_id);
+                serial_kprintf("pci multi: bus: 0x{x} device: 0x{x} type: 0x{x} class: 0x{x} subclass: 0x{x} vendorid: 0x{xn}", bus, func->device_id, multi_header_type, func->class_code, func->subclass, func->vendor_id);
                 ret.func_addr[function] = (uint64_t)func;
             }
         }
@@ -165,8 +163,8 @@ l84_pci_function_return check_device(uint64_t bus, uint64_t device){
     ret.multi = false;
     ret.func_addr[0] = (uint64_t)header;
 
-    //kprintf("pci: bus: 0x{x} device: 0x{x} type: 0x{x} class: 0x{x} subclass: 0x{x} vendorid: 0x{xn}", bus, header->device_id, header->header_type, header->class_code, header->subclass, header->vendor_id);
-    //serial_kprintf("pci: bus: 0x{x} device: 0x{x} type: 0x{x} class: 0x{x} subclass: 0x{x} vendorid: 0x{xn}", bus, header->header_type, header->class_code, header->subclass, header->vendor_id);
+    kprintf("pci: bus: 0x{x} device: 0x{x} type: 0x{x} class: 0x{x} subclass: 0x{x} vendorid: 0x{xn}", bus, header->device_id, header->header_type, header->class_code, header->subclass, header->vendor_id);
+    serial_kprintf("pci: bus: 0x{x} device: 0x{x} type: 0x{x} class: 0x{x} subclass: 0x{x} vendorid: 0x{xn}", bus, header->header_type, header->class_code, header->subclass, header->vendor_id);
 
     return ret;
 }

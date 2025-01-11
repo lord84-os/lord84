@@ -1,6 +1,8 @@
+#include "error.h"
 #include <stdint.h>
 void ioapic_init(void);
 void write_redir_entry(uint8_t reg, uint64_t data);
+kstatus set_redir_entry(uint8_t pin, uint8_t vector, uint8_t delivery, uint8_t trigger, uint8_t destination_field, uint8_t destination_mode);
 
 #define IOREGSEL    0x0
 #define IOWIN       0x10
