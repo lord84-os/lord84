@@ -79,6 +79,8 @@ void *kmalloc(size_t size){
         addr += base[j].size;
     }
 
+    memset((uint64_t*)addr, 0, size);
+
     base[i].addr = addr;
     base[i].free = false;
     base[i].size = size;

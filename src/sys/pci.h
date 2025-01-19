@@ -83,9 +83,16 @@ typedef struct pci_header_ahci_t {
 
 /* For internal use */
 typedef struct l84_pci_function_return {
-    bool multi; // If device has multiple functions this is set to 1, else set to 0. If set to 0, function2-8 are ignored
+    bool multi; // If device has multiple functions this is set to 1, else set to 0. If set to 0, functions index 1-7 are ignored
     uint64_t func_addr[8];
 } l84_pci_function_return;
+
+typedef struct pci_structure {
+    uint16_t segment;
+    uint8_t bus;
+    uint8_t device;
+    uint64_t func_addr[8];
+} pci_structure;
 
 l84_pci_function_return check_device(uint64_t bus, uint64_t device);
 

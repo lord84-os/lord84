@@ -1,7 +1,10 @@
 #include <lord84.h>
 #include <stdio.h>
+#include <string.h>
+#include <lock.h>
 #include "acpi.h"
 #include "../mm/vmm.h"
+#include "error.h"
 #include "pci.h"
 
 #define PCIE_CONF_SPACE_WIDTH       4096
@@ -15,6 +18,7 @@
 
 #define PCI_FUNCTION_MAX            8           // There are always a max of 8 functions per device
 
+#define PCI_DEVICE_BUS              8192        // Max number of devices in a
 
 mcfg_t *mcfg;
 
@@ -22,8 +26,33 @@ uint64_t config_space_base_addr = 0;
 uint8_t start_pci_num = 0;
 uint8_t end_pci_num = 0;
 
+pci_structure *pci_array;
+
 extern uint64_t hhdmoffset;
 extern uint64_t *kernel_page_map;
+
+atomic_flag pci_array_lock = ATOMIC_FLAG_INIT;
+
+void pci_add_device(pci_structure structure){
+    acquire_lock(&pci_array_lock);
+    int i = 0;
+
+    /* Find first unused space */
+    while(pci_array[i].func_addr[0] == 0){i++;}
+
+    pci_array[i].segment = structure.segment;
+    pci_array[i].bus = structure.bus;
+    pci_array[i].device = structure.device;
+ 
+    for(int j = 0; j < PCI_FUNCTION_MAX; j++){
+        if(structure.func_addr[j] != 0){
+            pci_array[i].func_addr[j] = structure.func_addr[j];
+        }
+    }
+
+    free_lock(&pci_array_lock);
+    return;
+}
 
 void parse_conf_space(){
     uint64_t num = (mcfg->header.length - sizeof(desc_header_t)) / sizeof(conf_space_t);
@@ -48,10 +77,13 @@ void parse_conf_space(){
 }
 
 void enumerate_conf_space(){
+    l84_pci_function_return ret;
+
     for(uint64_t i = 0; i < end_pci_num; i++){
         for(uint64_t j = 0; j < 32; j++){
-            check_device(i, j);
-            serial_kprintf("big i: {d}, small j: {d}\n", i, j);
+            ret = check_device(i, j);
+
+            
         }
     }
 }
@@ -122,6 +154,14 @@ void pci_init(){
     /* Map the config space */
     kernel_map_pages((uint64_t*)(config_space_base_addr - hhdmoffset), (PCIE_CONF_SPACE_WIDTH * end_pci_num) / PAGE_SIZE, PTE_BIT_RW | PTE_BIT_NX);
 
+    /* Stores enough for an entire configuration space */
+    pci_array = kmalloc((256 * 32) * sizeof(pci_structure));
+
+    if(!pci_array){
+        klog(LOG_ERROR, __func__, "Failed to allocate memory for PCI structures!");
+        kkill();
+    }
+
     enumerate_conf_space();
 
 
@@ -153,8 +193,8 @@ l84_pci_function_return check_device(uint64_t bus, uint64_t device){
             vmm_map_page(kernel_page_map, (uint64_t)func, (uint64_t)func - hhdmoffset, PTE_BIT_PRESENT | PTE_BIT_RW | PTE_BIT_NX);
 
             if(func->vendor_id != 0xffff){
-                kprintf("pci multi: bus: 0x{x} device: 0x{x} type: 0x{x} class: 0x{x} subclass: 0x{x} vendorid: 0x{xn}", bus, func->device_id, multi_header_type, func->class_code, func->subclass, func->vendor_id);
-                serial_kprintf("pci multi: bus: 0x{x} device: 0x{x} type: 0x{x} class: 0x{x} subclass: 0x{x} vendorid: 0x{xn}", bus, func->device_id, multi_header_type, func->class_code, func->subclass, func->vendor_id);
+                //kprintf("pci multi: bus: 0x{x} device: 0x{x} type: 0x{x} class: 0x{x} subclass: 0x{x} vendorid: 0x{xn}", bus, func->device_id, multi_header_type, func->class_code, func->subclass, func->vendor_id);
+                //serial_kprintf("pci multi: bus: 0x{x} device: 0x{x} type: 0x{x} class: 0x{x} subclass: 0x{x} vendorid: 0x{xn}", bus, func->device_id, multi_header_type, func->class_code, func->subclass, func->vendor_id);
                 ret.func_addr[function] = (uint64_t)func;
             }
         }
@@ -163,8 +203,8 @@ l84_pci_function_return check_device(uint64_t bus, uint64_t device){
     ret.multi = false;
     ret.func_addr[0] = (uint64_t)header;
 
-    kprintf("pci: bus: 0x{x} device: 0x{x} type: 0x{x} class: 0x{x} subclass: 0x{x} vendorid: 0x{xn}", bus, header->device_id, header->header_type, header->class_code, header->subclass, header->vendor_id);
-    serial_kprintf("pci: bus: 0x{x} device: 0x{x} type: 0x{x} class: 0x{x} subclass: 0x{x} vendorid: 0x{xn}", bus, header->header_type, header->class_code, header->subclass, header->vendor_id);
+    //kprintf("pci: bus: 0x{x} device: 0x{x} type: 0x{x} class: 0x{x} subclass: 0x{x} vendorid: 0x{xn}", bus, header->device_id, header->header_type, header->class_code, header->subclass, header->vendor_id);
+    //serial_kprintf("pci: bus: 0x{x} device: 0x{x} type: 0x{x} class: 0x{x} subclass: 0x{x} vendorid: 0x{xn}", bus, header->header_type, header->class_code, header->subclass, header->vendor_id);
 
     return ret;
 }
@@ -181,3 +221,4 @@ void check_bus(uint64_t bus){
 uint64_t get_header(uint64_t bus, uint64_t device, uint64_t function){
     return config_space_base_addr + ((bus * 256) + (device * 8) + function) * PCIE_CONF_SPACE_WIDTH;
 }
+

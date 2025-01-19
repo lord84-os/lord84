@@ -21,3 +21,4 @@ To try out lord84 you can use QEMU:
 
 - [Limine bootloader](https://github.com/limine-bootloader/limine) for the bootloader
 - [Flanterm](https://github.com/mintsuki/flanterm) for the terminal
+- [uACPI](https://github.com/uacpi/uacpi) for the AML interpreter
