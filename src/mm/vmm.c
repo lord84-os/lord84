@@ -173,7 +173,11 @@ uint64_t *get_lower_table(uint64_t *page_map, uint64_t offset){
 
 }
 
+atomic_flag page_table_lock = ATOMIC_FLAG_INIT;
+
 void vmm_map_page(uint64_t *page_map, uint64_t virt_addr, uint64_t phys_addr, uint64_t flags){
+    /* Probably slow, fix in future */
+    acquire_lock(&page_table_lock);
 
     uint64_t pml4_offset = (virt_addr >> 39) & 0x1ff;
     uint64_t pdp_offset = (virt_addr >> 30) & 0x1ff;
@@ -208,6 +212,8 @@ void vmm_map_page(uint64_t *page_map, uint64_t virt_addr, uint64_t phys_addr, ui
 	   movq %%rax, %%cr3\n"
         : : : "rax"
    );
+
+   free_lock(&page_table_lock);
 
 }
 
@@ -254,20 +260,15 @@ void vmm_free_page(uint64_t *page_map, uint64_t virt_addr){
 }
 
 /* Maps `size` number of free pages at the specified virtual address */
-int vmm_map_continous_pages(uint64_t virt_addr, uint64_t size, uint64_t flags){
+int vmm_map_continous_pages(uint64_t *page_map, uint64_t virt_addr, uint64_t phys_addr, uint64_t size, uint64_t flags){
     for(uint64_t i = 0; i < size; i++){
-        uint64_t *phys_addr = pmm_alloc();
-
-        if(!phys_addr){
-            return -1;
-        }
-        
-        serial_kprintf("virt_addr: 0x{xn}", virt_addr + i * PAGE_SIZE);
-        vmm_map_page(kernel_page_map, virt_addr + i * PAGE_SIZE, (uint64_t)phys_addr, flags);
+        vmm_map_page(page_map, virt_addr + i * PAGE_SIZE, (uint64_t)phys_addr, flags);
     }
 
     return 0;
 }
+
+
 
 /* Allocates and maps memory into the kernel address space */
 void *kernel_allocate_memory(uint64_t size, uint64_t flags){
@@ -288,8 +289,6 @@ void *kernel_allocate_memory(uint64_t size, uint64_t flags){
         vmm_map_page(kernel_page_map, (uint64_t)ret + hhdmoffset, (uint64_t)ret, PTE_BIT_PRESENT | flags);
     }
 
-
-
     return (void*)((uint64_t)ret + hhdmoffset);
 }
 
@@ -297,5 +296,11 @@ void *kernel_allocate_memory(uint64_t size, uint64_t flags){
 void kernel_map_pages(void *phys_addr, uint64_t size, uint64_t flags){
     for(uint64_t i = 0; i < size; i++){
         vmm_map_page(kernel_page_map, (uint64_t)phys_addr + hhdmoffset + (i * PAGE_SIZE), (uint64_t)phys_addr + (i * PAGE_SIZE), PTE_BIT_PRESENT | flags);
+    }
+}
+
+void kernel_unmap_pages(void *addr, uint64_t size){
+    for(uint64_t i = 0; i < size; i++){
+        vmm_free_page(kernel_page_map, (uint64_t)addr + i*PAGE_SIZE);
     }
 }

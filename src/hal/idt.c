@@ -50,6 +50,7 @@ extern void s_isr31();
 extern void s_isr44();
 
 extern void s_isr69();
+extern void s_isr70();
 
 extern void s_isr255();
 
@@ -155,6 +156,7 @@ void set_idt(void){
 
     set_idt_descriptor(44, 0, 0x8E);
     set_idt_descriptor(69, s_isr69, 0x8E);
+    set_idt_descriptor(70, s_isr70, 0x8E);
     set_idt_descriptor(255, s_isr255, 0x8E);
 
     s_load_idt();
@@ -217,6 +219,11 @@ void interrupt_handler(interrupt_frame *r){
 
     if(r->int_no == 69){
         apic_timer_handler();
+    }
+    if(r->int_no == 70){
+        for(;;){
+            asm("cli;hlt");
+        }
     }
 
     return;

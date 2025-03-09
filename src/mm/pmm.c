@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <lord84.h>
 #include <string.h>
+#include <lock.h>
 #include "pmm.h"
 #include "kmalloc.h"
 
@@ -21,7 +22,10 @@ struct limine_memmap_response *memmap_response;
 /* Freelist implementation */
 uint64_t *free_list = NULL;
 
+atomic_flag pmm_lock = ATOMIC_FLAG_INIT;
+
 void pmm_free(uint64_t *addr){
+    acquire_lock(&pmm_lock);
     uint64_t *virt_addr = (uint64_t*)((uint64_t)addr+hhdmoffset);
     /* Make the given page point to the previous free page */
     
@@ -31,12 +35,12 @@ void pmm_free(uint64_t *addr){
     free_list = virt_addr;
 
     pmm_free_page_count++;
-
+    free_lock(&pmm_lock);
     return;
 }
 
 uint64_t *pmm_alloc(){
-
+    acquire_lock(&pmm_lock);
     if(pmm_free_page_count <= 0){
         return NULL;
     }
@@ -45,8 +49,7 @@ uint64_t *pmm_alloc(){
     uint64_t *addr = (uint64_t*)((uint64_t)free_list - hhdmoffset);
     free_list = (uint64_t*)(*free_list);
     pmm_free_page_count--;
-    //kprintf("now at address 0x{xn}", (uint64_t)addr);
-    memset((uint64_t*)((uint64_t)addr+hhdmoffset), 0, 4096);
+    free_lock(&pmm_lock);
     return addr;
 }
 
@@ -84,6 +87,7 @@ void pmm_init(){
     uint64_t j;
     uint64_t i;
 
+    /* Dogshit fix this */
     for(i = 0; i < memmap_response->entry_count; i++){
         switch (entries[i]->type) {
             case LIMINE_MEMMAP_USABLE:

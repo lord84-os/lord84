@@ -4,3 +4,4 @@ limine
 src/flanterm
 disk.img
 bx_enh_dbg.ini
+uACPI

@@ -38,7 +38,13 @@ void pci_add_device(pci_structure structure){
     int i = 0;
 
     /* Find first unused space */
-    while(pci_array[i].func_addr[0] == 0){i++;}
+    while(pci_array[i].func_addr[0] != 0){
+        if(i >= PCI_DEVICE_BUS){
+            klog(LOG_ERROR, __func__, "No more space in  the PCI array!");
+            kkill();
+        }
+        i++;
+    }
 
     pci_array[i].segment = structure.segment;
     pci_array[i].bus = structure.bus;
@@ -52,6 +58,23 @@ void pci_add_device(pci_structure structure){
 
     free_lock(&pci_array_lock);
     return;
+}
+
+pci_structure *pci_get_device(pci_structure structure){
+    acquire_lock(&pci_array_lock);
+    pci_structure ret = {0};
+
+    for(int i = 0; i < PCI_DEVICE_BUS; i++){
+        if( structure.segment == pci_array[i].segment &&
+            structure.bus == pci_array[i].bus &&
+            structure.device == pci_array[i].device){
+                return &pci_array[i];
+                free_lock(&pci_array_lock);
+        }
+    }
+
+    free_lock(&pci_array_lock);
+    return NULL;
 }
 
 void parse_conf_space(){
@@ -82,7 +105,12 @@ void enumerate_conf_space(){
     for(uint64_t i = 0; i < end_pci_num; i++){
         for(uint64_t j = 0; j < 32; j++){
             ret = check_device(i, j);
-
+            
+            if(ret.func_addr[0] != 0){
+                pci_structure structure = {.segment = 1, .bus = i, .device = j};
+                memcpy(structure.func_addr, ret.func_addr, PCI_FUNCTION_MAX * sizeof(uint64_t));
+                pci_add_device(structure);
+            }
             
         }
     }
@@ -163,7 +191,6 @@ void pci_init(){
     }
 
     enumerate_conf_space();
-
 
 }
 

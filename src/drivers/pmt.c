@@ -33,12 +33,14 @@ uint64_t pmt_read_reg(gas_t X_PMTimerBlock){
 }
 
 int pmt_init(){
-    fadt = (fadt_t*)((uint64_t)find_acpi_table("FACP") + hhdmoffset);
+    fadt = (fadt_t*)((uint64_t)find_acpi_table("FACP"));
 
     if(!fadt){
         klog(LOG_ERROR, __func__, "Didn't find FADT table");
         kkill();
     }
+
+    fadt = (fadt_t*)((uint64_t)fadt + hhdmoffset);
 
     /* Check if timer exists */
     if(fadt->PMTimerLength == 0){

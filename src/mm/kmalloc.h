@@ -7,4 +7,4 @@ uint64_t *heap_alloc();
 void *kmalloc(uint64_t size);
 void kfree(void *addr);
 
-#define KERNEL_HEAP_SIZE    0x100000
+#define KERNEL_HEAP_SIZE    0x10000000

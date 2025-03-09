@@ -41,6 +41,8 @@ global s_isr44
 
 global s_isr69
 
+global s_isr70
+
 global s_isr255
 
 global s_load_idt
@@ -261,6 +263,13 @@ s_isr69:
     
     push qword 0
     push qword 69
+    jmp isr_handler
+
+; 70 - Kernel panic
+s_isr70:
+    
+    push qword 0
+    push qword 70
     jmp isr_handler
 
 s_isr255:

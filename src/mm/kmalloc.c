@@ -4,11 +4,11 @@
 #include <stdio.h>
 #include <lord84.h>
 #include <string.h>
+#include <lock.h>
 #include "pmm.h"
 #include "vmm.h"
 #include "kmalloc.h"
 
-#define KERNEL_HEAP_SIZE    0x100000 // Kernel heap size in bytes
 #define KERNEL_MAX_BLOCK    512
 
 typedef struct block_t {
@@ -45,7 +45,7 @@ void kernel_heap_init(){
     base->free = true;
 }
 
-void *kmalloc(size_t size){
+void *kmalloc(uint64_t size){
 
     /* First check if there is a free block which fits the size requirement */
     for(int i = 0; i < KERNEL_MAX_BLOCK; i++){
@@ -86,7 +86,6 @@ void *kmalloc(size_t size){
     base[i].size = size;
 
     return (void*)addr;
-
 }
 
 void kfree(void *addr){
@@ -100,4 +99,69 @@ void kfree(void *addr){
 
     kprintf("kfree: attempted to free non-heap address!\n");
     kkill();
+}
+
+void *krealloc(void *addr, uint64_t size) {
+    if (addr == NULL) {
+        return kmalloc(size);
+    }
+
+    if (size == 0) {
+        kfree(addr);
+        return NULL;
+    }
+
+    // Find the block corresponding to the pointer
+    int i;
+    for (i = 0; i < KERNEL_MAX_BLOCK; i++) {
+        if (base[i].addr == (uint64_t)addr) {
+            break;
+        }
+    }
+
+    if (i == KERNEL_MAX_BLOCK) {
+        kprintf("krealloc: attempted to realloc non-heap address!\n");
+        kkill();
+    }
+
+    block_t *block = &base[i];
+    uint64_t old_size = block->size;
+
+    // If the current size is already sufficient, return the same pointer
+    if (old_size >= size) {
+        return addr;
+    }
+
+    // Check if this block is the last allocated block in the array
+    bool is_last = true;
+    for (int j = i + 1; j < KERNEL_MAX_BLOCK; j++) {
+        if (base[j].addr != 0) {
+            is_last = false;
+            break;
+        }
+    }
+
+    // If it's the last block, check if there's enough space to expand
+    if (is_last) {
+        uint64_t current_end = block->addr + block->size;
+        uint64_t heap_end = (uint64_t)heap_addr + KERNEL_HEAP_SIZE;
+        uint64_t available = heap_end - current_end;
+
+        if (available >= (size - old_size)) {
+            // Expand the block in place
+            block->size = size;
+            return addr;
+        }
+    }
+
+    // Allocate a new block, copy data, and free the old block
+    void *new_ptr = kmalloc(size);
+    if (!new_ptr) {
+        return NULL; // Allocation failed
+    }
+
+    memcpy(new_ptr, addr, old_size);
+    kfree(addr);
+
+    return new_ptr;
 }

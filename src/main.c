@@ -11,6 +11,7 @@
 #include "hal/apic.h"
 #include "hal/timer.h"
 #include "hal/smp.h"
+#include "hal/tsc.h"
 #include "mm/pmm.h"
 #include "mm/vmm.h"
 #include "mm/kmalloc.h"
@@ -19,6 +20,7 @@
 #include "drivers/serial.h"
 #include "drivers/pmt.h"
 #include "drivers/ahci.h"
+#include "scheduler/sched.h"
 
 static volatile struct limine_framebuffer_request framebuffer_request = {
     .id = LIMINE_FRAMEBUFFER_REQUEST,
@@ -90,11 +92,13 @@ void _start(void){
 
     klog(LOG_INFO, "acpi", "Reading ACPI tables");
     acpi_init();
-    klog(LOG_SUCCESS, "acpi", "Done!");
+    klog(LOG_SUCCESS, "acpi", "Done!");  
 
     klog(LOG_INFO, "apic", "Initalizing APIC");
     apic_init();
     klog(LOG_SUCCESS, "apic", "Done!");
+
+    tsc_init();  
 
     klog(LOG_INFO, "pmm", "Setting up the PMM");
     pmm_init();
@@ -114,11 +118,11 @@ void _start(void){
     pci_init();
     klog(LOG_SUCCESS, "pci", "Done!");
 
-    klog(LOG_INFO, "ahci", "Initializing AHCI controller");
+    scheduler_init();
+
+/*     klog(LOG_INFO, "ahci", "Initializing AHCI controller");
     ahci_init();
-    klog(LOG_SUCCESS, "ahci", "Done!");
-
-
+    klog(LOG_SUCCESS, "ahci", "Done!"); */
 
     death:
     for(;;);

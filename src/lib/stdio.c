@@ -6,6 +6,7 @@
 #include "../flanterm/flanterm.h"
 #include "../include/stdio.h"
 #include "../drivers/serial.h"
+#include "../hal/tsc.h"
 
 
 #define FORMAT_LENGTH       1
@@ -25,25 +26,25 @@ extern bool serial_enabled;
 void klog(int level, const char *func, const char *msg){
     switch (level) {
         case LOG_INFO:
-            kprintf("{k}KLOG_INFO{k}: {s}: {sn}", ANSI_COLOR_MAGENTA, ANSI_COLOR_RESET, func, msg);
+            kprintf("[{d}] info: {s}: {sn}", tsc_get_timestamp(), func, msg);
             if(serial_enabled){
                 serial_kprintf("{k}KLOG_INFO{k}: {s}: {sn}", ANSI_COLOR_MAGENTA, ANSI_COLOR_RESET, func, msg);
             }
             return;
         case LOG_WARN:
-            kprintf("{k}KLOG_WARN{k}: {s}: {sn}", ANSI_COLOR_YELLOW, ANSI_COLOR_RESET, func, msg);
+            kprintf("[{d}] {k}warning{k}: {s}: {sn}", tsc_get_timestamp(), ANSI_COLOR_YELLOW, ANSI_COLOR_RESET, func, msg);
             if(serial_enabled){
                 serial_kprintf("{k}KLOG_WARN{k}: {s}: {sn}", ANSI_COLOR_YELLOW, ANSI_COLOR_RESET, func, msg);
             }
             return;
         case LOG_ERROR:
-            kprintf("{k}KLOG_ERROR{k}: {s}: {sn}", ANSI_COLOR_RED, ANSI_COLOR_RESET, func, msg);
+            kprintf("[{d}] {k}error{k}: {s}: {sn}", tsc_get_timestamp(), ANSI_COLOR_RED, ANSI_COLOR_RESET, func, msg);
             if(serial_enabled){
                 serial_kprintf("{k}KLOG_ERROR{k}: {s}: {sn}", ANSI_COLOR_RED, ANSI_COLOR_RESET, func, msg);
             }
             return;
         case LOG_SUCCESS:
-            kprintf("{k}KLOG_SUCCESS{k}: {s}: {sn}", ANSI_COLOR_GREEN, ANSI_COLOR_RESET, func, msg);
+            kprintf("[{d}] {k}success{k}: {s}: {sn}", tsc_get_timestamp(), ANSI_COLOR_GREEN, ANSI_COLOR_RESET, func, msg);
             if(serial_enabled){
                 serial_kprintf("{k}KLOG_SUCCESS{k}: {s}: {sn}", ANSI_COLOR_GREEN, ANSI_COLOR_RESET, func, msg);
             }
