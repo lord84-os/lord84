@@ -47,6 +47,8 @@ global s_isr255
 
 global s_load_idt
 
+global get_stack_frame
+
 s_isr0:
     ;
     push qword 0     ; dummy
@@ -317,14 +319,55 @@ s_isr255:
 
 isr_handler:
     pushaq
-    mov rdi, rsp ; put stack frame as parameter for interrupt_handler
+
+    mov rax, cr2
+    push rax ; Push CR2
+
+    mov rdi, rsp ; Put stack frame as parameter for interrupt_handler
     call interrupt_handler
+
+    add rsp, 8 ; Remove CR2 from the stack
+
     popaq
-    add rsp, 16 ; remove vector and error code from the stack
+
+    add rsp, 16 ; Remove vector and error code from the stack
     iretq
 
 s_load_idt:
     lidt [idtr]
     sti
     ret
+
+; void get_stack_frame(stack_frame *r)
+get_stack_frame:
+
+    pop rax ; get original IP
+
+    mov rbx, rsp
+
+    mov rsp, rdi
+
+    push rax ; push IP
+
+    mov rax, cs ; get CS
+    push rax
+
+    mov rax, rbx ; get original RSP
+    push rax
+
+    mov rax, ss ; get S
+    push rax
+
+    pushaq
+
+    mov rax, cr2
+    push rax ; Push CR2
+
+    push rbx ; Push original RSP
+
+    mov rsp, rbx
+
+    ret
+
+    
 

@@ -36,6 +36,8 @@ struct flanterm_context *ft_ctx;
 
 uint64_t hhdmoffset = 0;
 
+stack_frame *l84_kpanic_stack_frame;
+
 void _start(void){
 
     if(hhdm_request.response == NULL){
@@ -88,7 +90,7 @@ void _start(void){
 
     klog(LOG_INFO, "idt", "Setting up the IDT");
     set_idt();
-    klog(LOG_SUCCESS, "idt", "Done!");;
+    klog(LOG_SUCCESS, "idt", "Done!");
 
     klog(LOG_INFO, "acpi", "Reading ACPI tables");
     acpi_init();
@@ -110,6 +112,8 @@ void _start(void){
 
     kernel_heap_init();
 
+    l84_kpanic_stack_frame = (stack_frame*)kernel_allocate_memory(sizeof(stack_frame), PTE_BIT_NX | PTE_BIT_RW);
+
     klog(LOG_INFO, "smp", "Starting APs");
     smp_init();
     klog(LOG_SUCCESS, "smp", "Done!");
@@ -118,7 +122,10 @@ void _start(void){
     pci_init();
     klog(LOG_SUCCESS, "pci", "Done!");
 
-    scheduler_init();
+    logprintf("Hello from logger!\n");
+    // kpanic("Hi"); fix this
+
+/*     scheduler_init(); */
 
 /*     klog(LOG_INFO, "ahci", "Initializing AHCI controller");
     ahci_init();
@@ -128,9 +135,27 @@ void _start(void){
     for(;;);
 }
 
-bool kernel_killed = false;
 void kkill(void){
-    kernel_killed = true;
+    apic_send_ipi((struct ipi){255, 0, 0, 0b1, 0b11}); // Send all other processors to halt state
     asm volatile("cli; hlt");
+    for(;;);
+}
+
+void get_stack_frame(stack_frame *r);
+
+void kpanic(const char *reason){
+
+    get_stack_frame(l84_kpanic_stack_frame);
+
+    kprintf("{k}Panic! on CPU {d} {k}\n", ANSI_COLOR_RED, get_cpu_struct()->lapic_id, ANSI_COLOR_RESET);
+    kprintf("reason: '{s}'\n", reason);
+    kprintf("at ip: 0x{x}\n\n", l84_kpanic_stack_frame->rip);
+    kprintf("rax 0x{x} | rbx 0x{x} | rcx 0x{x} | rdx 0x{xn}", l84_kpanic_stack_frame->rax, l84_kpanic_stack_frame->rbx, l84_kpanic_stack_frame->rcx, l84_kpanic_stack_frame->rdx);
+    kprintf("rdi 0x{x} | rsi 0x{x} | rbp 0x{xn}", l84_kpanic_stack_frame->rdi, l84_kpanic_stack_frame->rsi, l84_kpanic_stack_frame->rbp);
+    kprintf("r8 0x{x} | r9 0x{x} | r10 0x{x} | r11 0x{x} | r12 0x{x} | r13 0x{x} | r14 0x{x} | r15 0x{xn}", l84_kpanic_stack_frame->r8, l84_kpanic_stack_frame->r9, l84_kpanic_stack_frame->r10, l84_kpanic_stack_frame->r11, l84_kpanic_stack_frame->r12, l84_kpanic_stack_frame->r13, l84_kpanic_stack_frame->r14, l84_kpanic_stack_frame->r15);
+    kprintf("cs 0x{x} | ss 0x{x} | rsp 0x{x}\n", l84_kpanic_stack_frame->cs, l84_kpanic_stack_frame->ss, l84_kpanic_stack_frame->rsp);
+    kprintf("cr2: 0x{x}\n", l84_kpanic_stack_frame->cr2);
+
+    kkill();
     for(;;);
 }

@@ -1,9 +1,12 @@
 #include "idt.h"
 #include "error.h"
+#include "smp.h"
 #include "timer.h"
+#include "apic.h"
 #include <stdio.h>
 #include <lock.h>
 #include <lord84.h>
+
 idt_descriptor idt[256] = {0};
 
 idt_register idtr = {sizeof(idt)-1, (uint64_t)(&idt)};
@@ -203,18 +206,29 @@ char *exception_messages[] =
 void interrupt_handler(interrupt_frame *r){
 
     if(r->int_no < 32){
-        kprintf("\nOh no! Received interrupt {d}, '{s}'. Below is the provided stack frame{n}{n}", r->int_no, exception_messages[r->int_no]);
-        kprintf("error code 0x{xn}", r->err);
+        kprintf("{k}Panic!{k}", ANSI_COLOR_RED, ANSI_COLOR_RESET);
+        cpu_state *structure = get_cpu_struct();
+        if(!structure){
+            kprintf("\nReceived exception {d}, '{s}' on BSP. Below is the provided stack frame{n}{n}", r->int_no, exception_messages[r->int_no]);
+        }else{
+            kprintf("\nReceived exception {d}, '{s}' on CPU {d}. Below is the provided stack frame{n}{n}", r->int_no, exception_messages[r->int_no], structure->lapic_id);
+        }
+       
+        kprintf("error code 0x{x}\n\n", r->err);
+        kprintf("at ip: 0x{x}\n\n", r->rip);
         kprintf("rax 0x{x} | rbx 0x{x} | rcx 0x{x} | rdx 0x{xn}", r->rax, r->rbx, r->rcx, r->rdx);
         kprintf("rdi 0x{x} | rsi 0x{x} | rbp 0x{xn}", r->rdi, r->rsi, r->rbp);
         kprintf("r8 0x{x} | r9 0x{x} | r10 0x{x} | r11 0x{x} | r12 0x{x} | r13 0x{x} | r14 0x{x} | r15 0x{xn}", r->r8, r->r9, r->r10, r->r11, r->r12, r->r13, r->r14, r->r15);
-        kprintf("rip 0x{x} | cs 0x{x} | ss 0x{x} | rsp 0x{x} | rflags 0x{xn}", r->rip, r->cs, r->ss, r->rsp, r->rflags);
+        kprintf("cs 0x{x} | ss 0x{x} | rsp 0x{x} | rflags 0x{xn}", r->cs, r->ss, r->rsp, r->rflags);
+        kprintf("cr2: 0x{x}\n", r->cr2);
+        
         kkill();
         for(;;);
     }
 
+    /* Halt other CPUs upon an exception */
     if(r->int_no == 255){
-        kprintf("hey");
+        kkill();
     }
 
     if(r->int_no == 69){

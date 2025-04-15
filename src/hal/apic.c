@@ -1,8 +1,8 @@
 #include "../sys/acpi.h"
 #include "../drivers/pmt.h"
-#include "smp.h"
 #include "timer.h"
 #include "ioapic.h"
+#include "apic.h"
 #include <lock.h>
 #include <stdio.h>
 #include <lord84.h>
@@ -35,6 +35,7 @@ extern uint64_t hhdmoffset;
 
 uint64_t lapic_address = 0;
 uint64_t timer_speed_us = 0;
+uint64_t lapic_timer_ticks = 0;
 
 void lapic_write_reg(uint32_t reg, uint32_t data){
     *((uint32_t*)(lapic_address+reg)) = data;
@@ -46,10 +47,9 @@ uint32_t lapic_read_reg(uint32_t reg){
 
 /* Assumes single-threaded*/
 void apic_sleep(uint64_t ms){
-    uint64_t lapic_timer_ticks = get_cpu_struct()->lapic_timer_ticks;
-    uint64_t curcnt = get_cpu_struct()->lapic_timer_ticks;
+    uint64_t curcnt = lapic_timer_ticks;
     while (lapic_timer_ticks - curcnt < ms) {
-        lapic_timer_ticks = get_cpu_struct()->lapic_timer_ticks;
+        asm("nop");
     }
 }
 
@@ -127,9 +127,19 @@ void ap_apic_init(){
 
 void apic_timer_handler(){
     lapic_write_reg(LAPIC_EOI_REG, 0);
-    get_cpu_struct()->lapic_timer_ticks++;
+    lapic_timer_ticks++;
 }
 
-void apic_send_ipi(uint8_t dest_field, uint8_t dest_shorthand, uint8_t trigger, uint8_t level, uint8_t status, uint8_t destination, uint8_t delivery_mode, uint8_t vector){
+void apic_send_ipi(struct ipi ipi){
 
+    if(lapic_address == 0){
+        return;
+    }
+
+    uint32_t command = (uint32_t)ipi.vector;
+    command |= (uint32_t)ipi.delivery_mode << 8;
+    command |= (uint32_t)ipi.destination_mode << 9;
+    command |= (uint32_t)ipi.level << 14;
+    command |= (uint32_t)ipi.destination_sh << 18;
+    lapic_write_reg(LAPIC_ICR_REG, command);
 }

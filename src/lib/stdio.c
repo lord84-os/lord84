@@ -55,6 +55,16 @@ void klog(int level, const char *func, const char *msg){
     
 }
 
+int logprintf(const char *format_string, ...){
+    kprintf("[{d}] ", tsc_get_timestamp());
+    va_list va;
+    va_start(va, format_string);
+    vkprintf(format_string, va);
+    va_end(va);
+    return 0;
+}
+
+
 
 atomic_flag printf_lock = ATOMIC_FLAG_INIT;
 
@@ -139,6 +149,72 @@ int kprintf(const char *format_string, ...){
     }
 
     va_end(a_list);
+    free_lock(&printf_lock);
+    return 0;
+}
+
+int vkprintf(const char *format_string, va_list a_list){
+    extern struct flanterm_context *ft_ctx;
+    acquire_lock(&printf_lock);
+    int state = NORMAL;
+    for(uint64_t i = 0; i < strlen(format_string); i++){
+        char current = format_string[i]; // current char in string
+        switch (state){
+            case NORMAL:
+                switch (current) {
+                    case '{':
+                        state = FORMAT_SPECIFIER;
+                        break;
+                    default:
+                        print_char(ft_ctx, current);
+                        break;                     
+                }
+                break;
+            case FORMAT_SPECIFIER:
+                switch (current) {
+                    case 'n':
+                        print_str(ft_ctx, "\n");
+                        break;
+                    case 'k':
+                        print_str(ft_ctx, va_arg(a_list, char*));
+                        break;
+                    case 'd':
+                    case 'i':
+                        print_int(ft_ctx, va_arg(a_list, long long));
+                        break;
+                    case 's':
+                        print_str(ft_ctx, va_arg(a_list, char*));
+                        break;
+                    case 'c':
+                        ;
+                        int ch = va_arg(a_list, int);
+                        print_char(ft_ctx, ch);
+                        break;
+                    case 'x':
+                        print_hex(ft_ctx, va_arg(a_list, uint64_t));
+                        break;
+                    case 'b':
+                        print_bin(ft_ctx, va_arg(a_list, uint64_t));
+                        break;
+                    case 'l':
+                        current++;
+                        switch (current) {
+                            case 'd':
+                                print_int(ft_ctx, va_arg(a_list, long long int));
+                                break;
+                        
+                        }
+                        break;
+                    case '}':
+                        state = NORMAL;
+                        break;
+
+                }
+                break;
+        }
+
+    }
+
     free_lock(&printf_lock);
     return 0;
 }

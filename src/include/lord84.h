@@ -16,3 +16,10 @@ typedef char link_symbol_ptr[];
 #define PAGE_ROUND_DOWN(size) ALIGN_DOWN(size, PAGE_SIZE)
 
 void *kmalloc(uint64_t size);
+
+void kpanic(const char *reason);
+
+typedef struct stack_frame {
+	uint64_t cr2, r15, r14, r13, r12, r11, r10, r9, r8, rdi, rsi, rbp, rdx, rcx, rbx, rax;
+	uint64_t rip, cs, rsp, ss;
+} __attribute((packed)) stack_frame;

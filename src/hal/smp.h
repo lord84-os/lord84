@@ -9,7 +9,7 @@
 typedef struct cpu_state {
     uint32_t lapic_id;
     uint64_t lapic_timer_ticks;
-    proc process_list[PROC_MAX];
+    proc *process_list;
     proc *current_process;
     uint16_t process_count;
     context scheduler_context;

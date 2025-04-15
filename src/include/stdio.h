@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stdarg.h>
 #include "../flanterm/flanterm.h"
 
 enum {
@@ -10,9 +11,13 @@ enum {
 
 void klog(int level, const char *func, const char *msg);
 
+int logprintf(const char *format_string, ...);
+
 int kprintf(const char *format_string, ...);
 
 int serial_kprintf(const char *format_string, ...);
+
+int vkprintf(const char *format_string, va_list a_list);
 
 void print_char(struct flanterm_context *ft_ctx, char c);
 void print_str(struct flanterm_context *ft_ctx, char *str);

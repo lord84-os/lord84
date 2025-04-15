@@ -18,7 +18,7 @@ typedef struct idt_register {
 } __attribute((packed)) idt_register;
 
 typedef struct interrupt_frame {
-	uint64_t r15, r14, r13, r12, r11, r10, r9, r8, rdi, rsi, rbp, rdx, rcx, rbx, rax;
+	uint64_t cr2, r15, r14, r13, r12, r11, r10, r9, r8, rdi, rsi, rbp, rdx, rcx, rbx, rax;
     uint64_t int_no, err;
 	uint64_t rip, cs, rflags, rsp, ss;
 } __attribute((packed)) interrupt_frame;

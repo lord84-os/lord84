@@ -6,7 +6,7 @@ typedef enum proc_state {
     RUNNING,
     READY,
     SLEEPING,
-    UNUSED
+    UNUSED = 0
 }proc_state;
 
 typedef struct context {
@@ -14,13 +14,23 @@ typedef struct context {
     uint64_t rip, rflags;
 } __attribute((packed))context;
 
-typedef struct proc {
+typedef struct thread {
     uint64_t *mem;
     uint64_t *kstack;
     proc_state state;
     uint16_t pid;
     context context;
+}thread;
+
+typedef struct proc {
+    uint64_t *mem;
+    uint64_t *kstack;
+    proc_state state;
+    thread *threads;
+    uint16_t pid;
+    context context;
 }proc;
+
 
 void scheduler_init();
 

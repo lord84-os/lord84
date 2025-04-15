@@ -92,10 +92,4 @@ void smp_init(){
     wrmsr(KERNELGSBASE, (uint64_t)cpu_struct);
     wrmsr(GSBASE, (uint64_t)cpu_struct);
 
-    /* If one of the APs has halted, then halt the BSP */
-    extern bool kernel_killed;
-    if(kernel_killed == true){
-        kkill();
-    }
-
 }
