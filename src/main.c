@@ -21,6 +21,7 @@
 #include "drivers/pmt.h"
 #include "drivers/ahci.h"
 #include "scheduler/sched.h"
+#include <io.h>
 
 static volatile struct limine_framebuffer_request framebuffer_request = {
     .id = LIMINE_FRAMEBUFFER_REQUEST,
@@ -96,12 +97,6 @@ void _start(void){
     acpi_init();
     klog(LOG_SUCCESS, "acpi", "Done!");  
 
-    klog(LOG_INFO, "apic", "Initalizing APIC");
-    apic_init();
-    klog(LOG_SUCCESS, "apic", "Done!");
-
-    tsc_init();  
-
     klog(LOG_INFO, "pmm", "Setting up the PMM");
     pmm_init();
     klog(LOG_SUCCESS, "pmm", "Done!");
@@ -112,20 +107,34 @@ void _start(void){
 
     kernel_heap_init();
 
+    /* Allocate CPU structure */
+    cpu_state *cpu_struct = (cpu_state*)kmalloc(sizeof(cpu_state));
+
+    wrmsr(KERNELGSBASE, (uint64_t)cpu_struct);
+    wrmsr(GSBASE, (uint64_t)cpu_struct);
+
+    //sched_init();
+
+    klog(LOG_INFO, "apic", "Initalizing APIC");
+    apic_init();
+    klog(LOG_SUCCESS, "apic", "Done!");
+
+    tsc_init();  
+
     l84_kpanic_stack_frame = (stack_frame*)kernel_allocate_memory(sizeof(stack_frame), PTE_BIT_NX | PTE_BIT_RW);
 
     klog(LOG_INFO, "smp", "Starting APs");
     smp_init();
     klog(LOG_SUCCESS, "smp", "Done!");
 
-    klog(LOG_INFO, "pci", "Getting le pci");
+    klog(LOG_INFO, "pci", "Getting the pci");
     pci_init();
     klog(LOG_SUCCESS, "pci", "Done!");
 
-    logprintf("Hello from logger!\n");
-    // kpanic("Hi"); fix this
 
-/*     scheduler_init(); */
+    logprintf("Hello from logger!\n");
+
+    //sched_init();
 
 /*     klog(LOG_INFO, "ahci", "Initializing AHCI controller");
     ahci_init();

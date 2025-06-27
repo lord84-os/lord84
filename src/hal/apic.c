@@ -1,8 +1,10 @@
 #include "../sys/acpi.h"
 #include "../drivers/pmt.h"
+#include "smp.h"
 #include "timer.h"
 #include "ioapic.h"
 #include "apic.h"
+#include "../mm/vmm.h"
 #include <lock.h>
 #include <stdio.h>
 #include <lord84.h>
@@ -45,10 +47,14 @@ uint32_t lapic_read_reg(uint32_t reg){
     return(*((uint32_t*)(lapic_address+reg)));
 }
 
+uint32_t get_lapic_id(){
+    return lapic_read_reg(LAPIC_ID_REG);
+}
+
 /* Assumes single-threaded*/
 void apic_sleep(uint64_t ms){
-    uint64_t curcnt = lapic_timer_ticks;
-    while (lapic_timer_ticks - curcnt < ms) {
+    uint64_t curcnt = get_cpu_struct()->lapic_timer_ticks;
+    while (get_cpu_struct()->lapic_timer_ticks - curcnt < ms) {
         asm("nop");
     }
 }
@@ -86,8 +92,11 @@ void lapic_timer_init(int us){
 
 void apic_init(void){
     asm("cli");
-
+    kernel_map_pages((uint32_t*)((uint64_t)madt->lic_address), 1, PTE_BIT_NX | PTE_BIT_RW);
     lapic_address = madt->lic_address + hhdmoffset;
+
+    /* Set LAPIC id of BSP */
+    get_cpu_struct()->lapic_id = get_lapic_id();
 
     lapic_ao_t *lapic_ao = (lapic_ao_t*) find_ics(0x5); // Local APIC Address Override
 
@@ -127,7 +136,8 @@ void ap_apic_init(){
 
 void apic_timer_handler(){
     lapic_write_reg(LAPIC_EOI_REG, 0);
-    lapic_timer_ticks++;
+    get_cpu_struct()->lapic_timer_ticks++;
+    sched_entry();
 }
 
 void apic_send_ipi(struct ipi ipi){

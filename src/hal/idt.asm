@@ -338,36 +338,5 @@ s_load_idt:
     sti
     ret
 
-; void get_stack_frame(stack_frame *r)
-get_stack_frame:
-
-    pop rax ; get original IP
-
-    mov rbx, rsp
-
-    mov rsp, rdi
-
-    push rax ; push IP
-
-    mov rax, cs ; get CS
-    push rax
-
-    mov rax, rbx ; get original RSP
-    push rax
-
-    mov rax, ss ; get S
-    push rax
-
-    pushaq
-
-    mov rax, cr2
-    push rax ; Push CR2
-
-    push rbx ; Push original RSP
-
-    mov rsp, rbx
-
-    ret
-
     
 

@@ -10,7 +10,7 @@ typedef enum proc_state {
 }proc_state;
 
 typedef struct context {
-    uint64_t rbx, rsp, rbp, r12, r13, r14, r15;
+    uint64_t r15, r14, r13, r12, rbx, rbp, rsp;
     uint64_t rip, rflags;
 } __attribute((packed))context;
 
@@ -29,10 +29,12 @@ typedef struct proc {
     thread *threads;
     uint16_t pid;
     context context;
+    struct proc *next;
 }proc;
 
 
-void scheduler_init();
+void sched_init();
+void sched_entry();
 
 #define PROC_MAX    512 // Max number of processes
 

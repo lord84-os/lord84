@@ -56,6 +56,7 @@ all:
 	$(AS) 	 src/hal/gdt.asm -o $(BUILD_DIR)/gdt_asm.o $(NASMFLAGS)
 	$(CC) -c src/hal/idt.c -o $(BUILD_DIR)/idt.o $(CFLAGS)
 	$(AS) 	 src/hal/idt.asm -o $(BUILD_DIR)/idt_asm.o $(NASMFLAGS)
+	$(AS) 	 src/hal/stack_frame.asm -o $(BUILD_DIR)/stack_frame_asm.o $(NASMFLAGS)
 	$(CC) -c src/hal/apic.c -o $(BUILD_DIR)/apic.o $(CFLAGS)
 	$(CC) -c src/hal/ioapic.c -o $(BUILD_DIR)/ioapic.o $(CFLAGS)
 	$(CC) -c src/hal/timer.c -o $(BUILD_DIR)/timer.o $(CFLAGS)

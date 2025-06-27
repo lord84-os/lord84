@@ -13,4 +13,5 @@ void apic_init(void);
 void ap_apic_init();
 void apic_sleep(uint64_t ms);
 void apic_send_ipi(struct ipi ipi);
+uint32_t get_lapic_id();
 

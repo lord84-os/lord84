@@ -59,7 +59,7 @@ void acpi_init(void){
 
     rsdp_t *rsdp = (rsdp_t*)(rsdp_request.response->address);
 
-    kprintf("RSDP address: 0x{xn}", (uint64_t)(rsdp));
+    logprintf("RSDP address: 0x{x}\n", (uint64_t)(rsdp));
 
     /* If the systems ACPI revision is higher/equal than 2, then use XSDT */
     if(rsdp->revision >= 2){
@@ -77,6 +77,8 @@ void acpi_init(void){
     }
 
     madt = (madt_t*)find_acpi_table("APIC");
+    madt = (madt_t*)((uint64_t)madt + hhdmoffset);
+
 
     if(!madt){
         klog(LOG_ERROR, __func__, "MADT table not found");

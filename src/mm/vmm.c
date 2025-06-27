@@ -62,7 +62,7 @@ void vmm_init(){
         data_end = ALIGN_UP((uint64_t)data_end_addr, PAGE_SIZE); 
 
 
-    // map usable entries, framebuffer and bootloader reclaimable shit
+    // map usable entries, framebuffer and bootloader reclaimable
     extern struct limine_memmap_response *memmap_response;
     for(uint64_t i = 0; i < memmap_response->entry_count; i++){
         if(memmap_response->entries[i]->type == LIMINE_MEMMAP_USABLE){
@@ -116,8 +116,6 @@ void vmm_init(){
 
     extern uint64_t lapic_address;
 
-    /* Map the APIC */
-    vmm_map_page(kernel_page_map, lapic_address, lapic_address - hhdmoffset, PTE_BIT_PRESENT | PTE_BIT_RW | PTE_BIT_NX);
 
     /* Map the ACPI tables */
     extern xsdt_t *xsdt;
@@ -292,7 +290,7 @@ void *kernel_allocate_memory(uint64_t size, uint64_t flags){
     return (void*)((uint64_t)ret + hhdmoffset);
 }
 
-/* Maps pages from phys_addr to phys_addr+size into the kernels address space */
+/* Maps pages from phys_addr to phys_addr+size into the kernels address space with a HHDM offset */
 void kernel_map_pages(void *phys_addr, uint64_t size, uint64_t flags){
     for(uint64_t i = 0; i < size; i++){
         vmm_map_page(kernel_page_map, (uint64_t)phys_addr + hhdmoffset + (i * PAGE_SIZE), (uint64_t)phys_addr + (i * PAGE_SIZE), PTE_BIT_PRESENT | flags);

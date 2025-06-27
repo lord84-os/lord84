@@ -3,9 +3,9 @@ default rel
 global switch_context
 
 %macro save_context 0
-    push rbx
     push rsp
     push rbp
+    push rbx
     push r12
     push r13
     push r14
@@ -17,9 +17,9 @@ global switch_context
     pop r14
     pop r13
     pop r12
+    pop rbx
     pop rbp
     pop rsp
-    pop rbx
 %endmacro
 
 ; Switch context from old to new
@@ -29,8 +29,8 @@ switch_context:
 
     save_context
 
-    mov rdi, rsp
-    mov rsp, rsi
+    mov rsp, rdi
+    mov rsi, rsp
     
     load_context
     

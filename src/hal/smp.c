@@ -57,14 +57,14 @@ void ap_init(struct limine_smp_info *smp_info){
     wrmsr(KERNELGSBASE, (uint64_t)cpu_struct);
     wrmsr(GSBASE, (uint64_t)cpu_struct);
 
+    //sched_init();
+
     /* Initialize APIC & APIC timer */
     ap_apic_init();
 
     free_lock(&ap_init_lock);
 
     for(;;);
-
-    scheduler_init();
 }
 
 void smp_init(){
@@ -84,12 +84,5 @@ void smp_init(){
     }
 
     /* -- Setup CPU structure for BSP -- */
-
-    /* Allocate CPU structure */
-    cpu_state *cpu_struct = (cpu_state*)kmalloc(sizeof(cpu_state));
-    cpu_struct->lapic_id = smp_response->cpus[0]->lapic_id;
-
-    wrmsr(KERNELGSBASE, (uint64_t)cpu_struct);
-    wrmsr(GSBASE, (uint64_t)cpu_struct);
 
 }
