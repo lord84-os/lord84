@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stdint.h>
 #include "../scheduler/sched.h"
 
@@ -18,4 +19,5 @@ typedef struct cpu_state {
 void smp_init();
 cpu_state *get_cpu_struct();
 uint64_t get_cpu_count();
+bool get_cpu_struct_initialized();
 

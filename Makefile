@@ -1,7 +1,7 @@
 BUILD_DIR=build
-CC = x86_64-elf-gcc
+CC = x86_64-pc-linux-gnu-gcc
 AS = nasm
-LD = x86_64-elf-ld
+LD = x86_64-pc-linux-gnu-ld
 CFLAGS += -Wall \
     -Wextra \
     -std=gnu11 \
@@ -45,8 +45,8 @@ all:
 	mkdir -p $(BUILD_DIR) || true
 	# build & link boot and kernel files
 	$(CC) -c src/main.c -o $(BUILD_DIR)/main.o $(CFLAGS)
-	$(CC) -c src/flanterm/flanterm.c -o $(BUILD_DIR)/flanterm.o $(CFLAGS)
-	$(CC) -c src/flanterm/backends/fb.c -o $(BUILD_DIR)/fb.o $(CFLAGS)
+	$(CC) -c src/flanterm/src/flanterm.c -o $(BUILD_DIR)/flanterm.o $(CFLAGS)
+	$(CC) -c src/flanterm/src/flanterm_backends/fb.c -o $(BUILD_DIR)/fb.o $(CFLAGS)
 	$(CC) -c src/lib/string.c -o $(BUILD_DIR)/string.o $(CFLAGS)
 	$(CC) -c src/lib/stdio.c -o $(BUILD_DIR)/stdio.o $(CFLAGS)
 	$(CC) -c src/lib/io.c -o $(BUILD_DIR)/io.o $(CFLAGS)

@@ -15,6 +15,7 @@ extern void switch_context(context *old, context *new);
 int next_pid = 1;
 
 void idle_task(){
+    kprintf("Hello world from bruhd task!\n");
     for(;;);
 }
 
@@ -67,6 +68,11 @@ proc *alloc_process(void){
 kstatus add_task(uint64_t *entry){
     proc *proc = alloc_process();
 
+    if (proc == NULL) {
+        klog(LOG_ERROR, __func__, "proc == null!");
+        kkill();
+    }
+
     proc->context.rip = (uint64_t)entry;
 
     return KERNEL_STATUS_SUCCESS;
@@ -102,7 +108,6 @@ void scheduler_init(){
                 state->current_process->state = RUNNING;
 
                 switch_context(&old_state, &state->current_process->context);
-
 
             }
         }

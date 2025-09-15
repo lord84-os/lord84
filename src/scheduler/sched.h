@@ -6,7 +6,7 @@ typedef enum proc_state {
     RUNNING,
     READY,
     SLEEPING,
-    UNUSED
+    UNUSED = 0
 }proc_state;
 
 typedef struct context {

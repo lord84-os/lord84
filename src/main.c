@@ -4,8 +4,8 @@
 #include <string.h>
 #include "../limine/limine.h"
 #include "include/stdio.h"
-#include "flanterm/flanterm.h"
-#include "flanterm/backends/fb.h"
+#include "../flanterm/src/flanterm.h"
+#include "flanterm/src/flanterm_backends/fb.h"
 #include "hal/gdt.h"
 #include "hal/idt.h"
 #include "hal/apic.h"
@@ -99,6 +99,7 @@ void _start(void){
     klog(LOG_SUCCESS, "apic", "Done!");
 
     tsc_init();  
+
 
     klog(LOG_INFO, "pmm", "Setting up the PMM");
     pmm_init();

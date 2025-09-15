@@ -1,5 +1,5 @@
 #include <stdint.h>
-#include "../flanterm/flanterm.h"
+#include "../flanterm/src/flanterm.h"
 
 enum {
     LOG_INFO = 0,

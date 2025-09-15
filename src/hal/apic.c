@@ -127,7 +127,9 @@ void ap_apic_init(){
 
 void apic_timer_handler(){
     lapic_write_reg(LAPIC_EOI_REG, 0);
-    get_cpu_struct()->lapic_timer_ticks++;
+    if(get_cpu_struct_initialized()){
+        get_cpu_struct()->lapic_timer_ticks++;
+    }
 }
 
 void apic_send_ipi(uint8_t dest_field, uint8_t dest_shorthand, uint8_t trigger, uint8_t level, uint8_t status, uint8_t destination, uint8_t delivery_mode, uint8_t vector){

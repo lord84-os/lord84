@@ -3,7 +3,6 @@
 #include <stdbool.h>
 #include <string.h>
 #include <lock.h>
-#include "../flanterm/flanterm.h"
 #include "../include/stdio.h"
 #include "../drivers/serial.h"
 #include "../hal/tsc.h"
