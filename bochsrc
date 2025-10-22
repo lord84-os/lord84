@@ -1,5 +1,5 @@
 display_library: x, options="gui_debug"
-ata0-master: type=cdrom, path="build/lord84.iso", status=inserted
+ata0-master: type=cdrom, path="build/SFB25.iso", status=inserted
 boot: cdrom
 memory: guest=512, host=512
 cpu: count=3, ips=95000000

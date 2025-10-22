@@ -5,7 +5,7 @@
 #include "ioapic.h"
 #include <lock.h>
 #include <stdio.h>
-#include <lord84.h>
+#include <SFB25.h>
 #include <cpuid.h> // GCC specific
 
 #define LAPIC_ID_REG                0x020

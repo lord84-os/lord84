@@ -1,7 +1,7 @@
 BUILD_DIR=build
-CC = x86_64-pc-linux-gnu-gcc
+CC = gcc
 AS = nasm
-LD = x86_64-pc-linux-gnu-ld
+LD = ld
 CFLAGS += -Wall \
     -Wextra \
     -std=gnu11 \
@@ -39,7 +39,7 @@ dependencies:
 	# clone flanterm
 	rm -rf src/flanterm
 	
-	git clone https://github.com/mintsuki/flanterm src/flanterm
+	git clone https://codeberg.org/mintsuki/flanterm src/flanterm
 all:
 	# make build directory
 	mkdir -p $(BUILD_DIR) || true
@@ -78,11 +78,11 @@ all:
 
 
 	# link everything to an elf
-	$(LD) -o $(BUILD_DIR)/lord84.elf  $(BUILD_DIR)/*.o $(LDFLAGS)
+	$(LD) -o $(BUILD_DIR)/SFB25.elf  $(BUILD_DIR)/*.o $(LDFLAGS)
 	# Create a directory which will be our ISO root.
 	mkdir -p iso_root
 	# Copy the relevant files over.
-	cp -v $(BUILD_DIR)/lord84.elf limine.conf limine/limine-bios.sys \
+	cp -v $(BUILD_DIR)/SFB25.elf limine.conf limine/limine-bios.sys \
 		limine/limine-bios-cd.bin limine/limine-uefi-cd.bin iso_root/
 	# Create the EFI boot tree and copy Limine's EFI executables over.
 	mkdir -p iso_root/EFI/BOOT
@@ -93,9 +93,9 @@ all:
 			-no-emul-boot -boot-load-size 4 -boot-info-table \
 			--efi-boot limine-uefi-cd.bin \
 			-efi-boot-part --efi-boot-image --protective-msdos-label \
-			iso_root -o $(BUILD_DIR)/lord84.iso
+			iso_root -o $(BUILD_DIR)/SFB25.iso
 	# Install Limine stage 1 and 2 for legacy BIOS boot.
-	./limine/limine bios-install $(BUILD_DIR)/lord84.iso
+	./limine/limine bios-install $(BUILD_DIR)/SFB25.iso
 disk:
 	dd if=/dev/zero of=disk.img bs=1M count=128
 elftest:

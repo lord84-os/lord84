@@ -1,8 +1,7 @@
 #include <stdint.h>
 #include <stddef.h>
-#include <lord84.h>
-#include <string.h>
-#include "../limine/limine.h"
+#include <SFB25.h>
+#include "limine.h"
 #include "include/stdio.h"
 #include "../flanterm/src/flanterm.h"
 #include "flanterm/src/flanterm_backends/fb.h"
@@ -74,7 +73,7 @@ void _start(void){
             0
     );
 
-    kprintf("Welcome to lord84{n}");
+    kprintf("Welcome to SFB/25{n}");
 
     extern link_symbol_ptr text_start_addr, text_end_addr;
 

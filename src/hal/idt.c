@@ -3,7 +3,7 @@
 #include "timer.h"
 #include <stdio.h>
 #include <lock.h>
-#include <lord84.h>
+#include <SFB25.h>
 idt_descriptor idt[256] = {0};
 
 idt_register idtr = {sizeof(idt)-1, (uint64_t)(&idt)};

@@ -4,7 +4,7 @@
 #include "../drivers/pmt.h"
 #include "timer.h"
 #include <stdio.h>
-#include <lord84.h>
+#include <SFB25.h>
 
 /* Determines which timer will be used for calibration */
 int calibration_timer = -1;

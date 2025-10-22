@@ -1,6 +1,6 @@
-# lord84
+# SFB25
 
-lord84 is an operating system for the x86_64 architecture. It is written in C. Licensed under MIT
+SFB25 is an operating system for the x86_64 architecture. It is written in C. Licensed under MIT
 
 
 ## How to build
@@ -9,11 +9,11 @@ First run `make dependencies` to clone and build Limine and Flanterm
 
 Then run `make all` - make sure to adjust the `CC`, `AS` and `LD` flags to match your cross-compiling toolchain
 
-in the `build` folder you should have a `lord84.iso` file.
+in the `build` folder you should have a `SFB25.iso` file.
 
-To try out lord84 you can use QEMU:
+To try out SFB25 you can use QEMU:
 
-`qemu-system-x86_64 build/lord84.iso -m 512M`
+`qemu-system-x86_64 build/SFB25.iso -m 512M`
 
 
 
